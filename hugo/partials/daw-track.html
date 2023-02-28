@@ -1,0 +1,28 @@
+{{- $seed := "pq_daw" -}}
+{{- $rand_id := delimit (shuffle (split (md5 $seed) "" )) "" -}} <!-- unused, but it worked well, so remember -->
+
+{{- $id := or .id "" -}}
+{{- $solo := or .solo false -}}
+{{- $mute := or .mute false -}}
+{{- $pan := or .pan 0 -}}
+{{- $volume := or .volume 0 -}}
+{{- $mono := or .mono false -}}
+{{- $phase := or .phase false -}}
+{{- $type := or .type "regular" -}} <!--regular, bus, automation -->
+{{- $visible := or .visible true -}}
+{{- $effects := or .effects "" -}}
+{{- $record := or .record false -}}
+{{- $out := or .out "master" -}}
+{{- $show := or .show "" -}}
+{{- $hide := or .hide "" -}}
+{{- $master := or .master "false" -}}
+{{- $auto_create_part := or .master false -}}
+
+<div class="pq-daw-track" 
+    data-id="{{ $id }}" data-type="{{ $type }}" data-solo="{{ $solo }}" data-mute="{{ $mute }}" 
+    data-pan="{{ $pan }}" data-volume="{{ $volume }}" data-mono="{{ $mono }}" data-phase="{{ $phase }}" data-record="{{ $record }}"
+    data-visible="{{ $visible }}" data-effects="{{ $effects }}" data-out="{{ $out }}"
+    data-show="{{ $show }}" data-hide="{{ $hide }}" data-master="{{ $master }}"
+    >
+    {{- .inner | safeHTML -}}
+</div>

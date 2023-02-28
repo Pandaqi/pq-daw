@@ -1,0 +1,2 @@
+{{- $params := dict "source" (.Get "source") "start" (.Get "start") "end" (.Get "end") "offset" (.Get "offset") "duration" (.Get "duration") "totalduration" (.Get "totalduration") "fadestart" (.Get "fadestart") "fadeend" (.Get "fadeend") "type" (.Get "type") -}}
+{{- partial "daw-track-part.html" $params -}}

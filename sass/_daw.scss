@@ -1,0 +1,492 @@
+@use "sass:map";
+@use "sass:list";
+@use "sass:color";
+
+@use "modules/_globals.scss" as g;
+
+@mixin slider-thumb
+{
+    height: 1.0rem;
+    width: 0.5rem;
+    border: none;
+    border-radius: 0.2rem;
+    background-color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    margin-top:-0.5rem;
+    box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.3);
+}
+
+@mixin slider-track
+{
+    border: none;
+    width: 100%;
+    height: 0.25rem;
+    cursor: pointer;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 0.1rem;
+}
+
+@mixin slider-thumb-focus
+{
+    background-color: white;
+    outline: 3px solid rgba(255,255,255);
+    outline-offset: 0.125rem;
+}
+
+@mixin slider-track-focus
+{
+    background-color: rgba(0,0,0,0.8);
+}
+
+figure.pq-daw-wrapper {
+    margin: 0;
+    margin-bottom: 4.0em;
+
+    .daw-metadata {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        align-items: center;
+        margin: 0.25rem;
+
+        opacity: 0.75;
+        font-size: 0.66rem;
+        font-style: italic;
+    }
+}
+
+.daw-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.0rem;
+
+    button {
+        border-radius: 0.25rem;
+        filter: drop-shadow(0 0 2px #999);
+        transition: transform 0.2s;
+
+        &:hover {
+            transform: scale(1.25);
+        }
+    }
+}
+
+.pq-daw-track, .pq-daw-track-effects {
+    button {
+        border-radius: 0.2rem;
+        background-color: rgba(255,255,255,0.85);
+        color: black;
+        font-weight: bold;
+        font-family: "Dosis", sans-serif;
+        font-size: 0.8rem;
+
+        &.daw-btn-enabled {
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+        }
+    }
+}
+
+$icons: (
+    "play": ("frame": 0, "col": #015601),
+    "stop": ("frame": 1, "col": #4e1000),
+    "addtrack": ("frame": 2, "col": #0b4d7e),
+    "removetrack": ("frame": 3, "col": #0b4d7e),
+    "download": ("frame": 4, "col": #5f0c5f),
+    "general1": ("frame": 5, "col": black),
+    "general2": ("frame": 6, "col": black),
+    "general3": ("frame": 7, "col": black),
+
+    "compressor": ("frame": 8, "col": #ffa2ff),
+    "delay": ("frame": 9, "col": #ffa6b6),
+    "distortion": ("frame": 10, "col": #ff9d9d),
+    "equalizer": ("frame": 11, "col": #7ff87f),
+    "gain": ("frame": 12, "col": #84d6f0),
+    "noise": ("frame": 13, "col": #bcbcff),
+    "reverb": ("frame": 14, "col": #c8c8ff),
+    "effect1": ("frame": 15, "col": black),
+);
+
+.pq-daw-wrapper {
+    .icon {
+        background-image: url(/tutorials/daw/assets/pq_daw_icons.webp);
+        width: 32px;
+        height: 32px;
+        background-size: cover;
+    }
+
+    $icon-opacity: 0.75;
+
+    @each $name, $data in $icons {
+        $frame: map.get($data, "frame");
+        $col: map.get($data, "col");
+
+        .daw-controls {
+            .icon-#{$name} {
+                background-color: $col;
+            }
+        }
+
+        .icon-#{$name} {
+            background-position-x: -100% * $frame;
+            /*background-color: rgba($col, $icon-opacity);*/
+        }
+
+        .effect-#{$name} {
+            background-color: $col;
+        }
+    }
+
+    
+}
+
+.pq-daw-track {
+    display: flex;
+    height: 100px;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    .track-metadata
+    {
+        display: flex;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+
+        .track-name, .out-name
+        {
+            display: block;
+            width: 100%;
+            font-family: "Dosis", serif;
+
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 0.33rem;
+            color: white;
+            font-size: 0.66rem;
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+            box-shadow: inset 0 0 3px #222;
+        }
+    }
+
+    .track-buttons
+    {
+        display: flex;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+        justify-content: start;
+        align-items: center;
+        margin: 0.25rem;
+    }
+
+    .track-controls
+    {
+        width: 7.5rem;
+        max-width: 7.5rem;
+        min-width: 7.5rem;
+        padding: 0.5rem;
+
+        .track-effects {
+            overflow: auto;
+            height: 50px; // @IMPROV: dynamically calculate this in JavaScript? (for the trackheight might change)
+
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            justify-content: left;
+            align-items: center;
+        }
+        
+    }
+
+    .track-content {
+        position: relative;
+        width: 100%;
+
+        .time-grid {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            pointer-events: none;
+        }
+
+        .time-cursor {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 5px;
+            z-index: 1000;
+            background-color: black;
+            pointer-events: none;
+            filter: drop-shadow(0px 0px 4px #666);
+        }
+
+        .track-type-label {
+            position: absolute;
+            right: 0.33rem;
+            bottom: 0.33rem;
+            pointer-events: none;
+            z-index: 1500;
+
+            font-family: "Dosis", serif;
+            font-weight: bold;
+            opacity: 0.25;
+            color: black;
+        }
+
+        .pq-daw-track-part {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            max-width: 100%;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.25rem;
+        }
+    }
+
+    .volume-display {
+        height: 100%;
+        width: 1.5rem;
+        transform: rotate(180deg);
+        position: relative;
+        padding: 0.25rem;
+        background-color: black;
+
+        .volume-display-container {
+            box-shadow: inset 0 0 3px black;
+            height: 100%;
+            width: 100%;
+        }
+
+        .volume-display-rect {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 50px;
+            background-color: green;
+            z-index: -5;
+            position: relative;
+        }
+    }
+}
+
+.pq-daw-track-part {
+    .part-edge-dragger, .part-fade-visual {
+        position: absolute;
+        top: 0;
+        height: 100%;
+
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+}
+
+$effect-grid-cutoff: 720px;
+
+/* Focus by DOM */
+.pq-daw-dom-focus {
+    opacity: 1.0;
+    animation: fadeInOut 1s linear;
+    animation-iteration-count: infinite;
+    background-color: white !important;
+    color: black !important;
+}
+
+@keyframes fadeInOut {
+    0%,100% { 
+        opacity: 1.0;
+        filter: drop-shadow(0 0 0.0rem #222);
+    }
+    
+    50% { 
+        opacity: 0.95;
+        filter: drop-shadow(0 0 0.33rem #222);
+    }
+}
+
+
+/* Plugins */
+.pq-daw-track-effects {
+    .effect {
+        border-top: 0.5rem solid black;
+        
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+
+        margin-bottom: 0.5rem;
+        margin-top: 0.5rem;
+
+        .full-width, canvas {
+            grid-column: 1 / 3;
+
+            @media (max-width: $effect-grid-cutoff)
+            {
+                grid-column: auto;
+            }
+        }
+
+        .effect-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1.0rem;
+
+            h2 { 
+                margin: 0;
+                color: rgba(0,0,0,0.66);
+                padding: 0; 
+                font-size: 1.0rem !important;
+            }
+            h2::before { all: unset; }
+            h2::after { all: unset; }
+
+            p { 
+                margin: 0; 
+                width: 100%; 
+                text-align: left;
+                font-size: 0.66rem;
+                line-height: 100%;
+                font-style: italic;
+                opacity: 0.75;
+            }
+            
+            .effect-control-container {
+                width: unset;
+
+                .label-container {
+                    width: unset;
+                    max-width: unset;
+                    min-width: unset;
+                }
+            }
+
+
+        }
+
+        canvas {
+            border-radius: 0.5rem;
+        }
+
+        .effect-subsection {
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+        }
+
+        .effect-subsection-header {
+            font-family: "Dosis", serif;
+            font-weight: bold;
+        }
+    }
+
+    .effect-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.0rem;
+
+        @media (max-width: $effect-grid-cutoff)
+        {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .effect-control-container {
+        display: flex;
+        gap: 1.0rem;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+
+        .label-container {
+            width: 7.0rem;
+            min-width: 7.0rem;
+
+            .value-display {
+                opacity: 0.75;
+                font-size: 1.0rem;
+                margin-left: 0.5rem;
+            }
+        }
+
+        
+    }
+}
+
+/* To get custom dropdowns */
+// remove the default styles again
+select
+{
+    appearance: none;
+    background-color: transparent;
+    border: none;
+    padding: 0 1em 0 0;
+    margin: 0;
+    width: 100%;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: inherit;
+    line-height: inherit;
+}
+
+select {
+    background-color: rgba(0,0,0,0.66);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-family: "Dosis", serif;
+    color: white;
+    cursor: pointer;
+    box-shadow: inset 0 0 6px #333;
+}
+
+
+/* The whole mess of styles to get custom sliders */
+.track-controls, .volume-display, .effect-control-container {
+    input {
+        width: 100%;
+        font-family: "Dosis", sans-serif;
+    }
+
+    input[type=range] {
+        appearance: none;
+        width: 100%;
+        background: transparent;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+    }
+
+    input[type=range]:focus {
+        outline: none;
+    }
+
+    input[type="range"]:focus::-webkit-slider-thumb { @include slider-thumb-focus }
+    input[type="range"]:focus::-moz-range-thumb { @include slider-thumb-focus }
+
+    input[type=range]::-webkit-slider-thumb { @include slider-thumb; }
+    input[type=range]::-moz-range-thumb { @include slider-thumb; }
+    input[type=range]::-ms-thumb { @include slider-thumb; }
+}
+
+.track-controls, .effect-control-container {
+    input[type=range]::-webkit-slider-runnable-track { @include slider-track; }
+    input[type=range]::-moz-range-track { @include slider-track; }
+
+    input[type=range]:focus::-webkit-slider-runnable-track { @include slider-track-focus }
+}
+
+.volume-display {
+    input[type=range] {
+        position: absolute;
+        top: 45px;
+        left: -45px;
+        transform: rotate(90deg);
+        z-index: 2000;
+    }
+}

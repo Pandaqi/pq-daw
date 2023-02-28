@@ -1,0 +1,2 @@
+{{- $params := dict "id" (.Get "id") "solo" (.Get "solo") "mute" (.Get "mute") "pan" (.Get "pan") "volume" (.Get "volume") "mono" (.Get "mono") "phase" (.Get "phase") "type" (.Get "type") "visible" (.Get "visible") "effects" (.Get "effects") "record" (.Get "record") "out" (.Get "out") "show" (.Get "show") "hide" (.Get "hide") "inner" .Inner -}}
+{{- partial "daw-track.html" $params -}}

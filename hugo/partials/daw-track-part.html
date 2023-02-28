@@ -1,0 +1,15 @@
+{{- $source := or .source "" -}}
+{{- $start := or .start 0 -}}
+{{- $end := or .end "NoEndTimeSpecified" -}}
+{{- $offset := or .offset 0 -}}
+{{- $duration := or .duration "NoDurationSpecified" -}}
+{{- $total_duration := or .totalduration "NoTotalDurationKnown" -}}
+{{- $fade_start := or .fadestart 0.05 -}}
+{{- $fade_end := or .fadeend $fade_start -}}
+{{- $type := or .type "audio" -}}
+{{- if eq $source "" -}}{{- $type = "oscillator" -}}{{- end -}}
+<div class="pq-daw-track-part" data-source="{{ $source }}" data-type="{{ $type }}"
+    data-start="{{ $start }}" data-end="{{ $end }}" data-duration="{{ $duration }}" 
+    data-totalduration="{{ $total_duration }}" data-offset="{{ $offset }}"
+    data-fadestart="{{ $fade_start }}" data-fadeend="{{ $fade_end }}">
+</div>

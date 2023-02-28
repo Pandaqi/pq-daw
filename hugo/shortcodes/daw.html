@@ -1,0 +1,9 @@
+{{- $tempo := or (.Get "tempo") 120 -}}
+{{- $duration := or (.Get "duration") "" -}}
+{{- $caption := or (.Get "caption") "" -}}
+
+<figure class="pq-daw-wrapper no-hover" data-tempo="{{ $tempo }}" data-duration="{{ $duration }}" data-caption="{{ $caption }}">
+    <div class="daw-tracks">
+        {{- .Inner | safeHTML -}}
+    </div>
+</figure>
