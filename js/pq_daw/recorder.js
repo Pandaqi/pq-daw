@@ -1,4 +1,6 @@
-PQ_DAW.Recorder = class {
+import AUDIO from "./audio"
+
+export default class Recorder {
 
     constructor()
     {
@@ -39,7 +41,7 @@ PQ_DAW.Recorder = class {
 
     async saveInBuffer(daw)
     {
-        await PQ_DAW.AUDIO.saveBlobResource(daw, this.URI, this.blob);
+        await AUDIO.saveBlobResource(daw, this.URI, this.blob);
     }
 
     download()

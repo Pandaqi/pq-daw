@@ -1,7 +1,10 @@
+import AUDIO from "./audio"
+import DOM from "./dom"
+import Daw from "./daw"
 
 // responsible for playing/updating daws
 // (I'm experimenting with a very functional---instead of OOP---coding style here)
-PQ_DAW.PLAYER = {
+export default {
     init()
     {
         this.daws = [];
@@ -25,7 +28,7 @@ PQ_DAW.PLAYER = {
             playbackTest.start();
         }
 
-        const blob = PQ_DAW.AUDIO.audioBufferToWaveBlobSimple(renderedBuffer);
+        const blob = AUDIO.audioBufferToWaveBlobSimple(renderedBuffer);
         const blobURL = URL.createObjectURL(blob);
         this.downloadRender(blobURL);
     },
@@ -50,7 +53,7 @@ PQ_DAW.PLAYER = {
 
     playOffline(daw)
     {
-        const dawCopy = new PQ_DAW.Daw({ node: daw.node, offline: true }); // second parameter = "offline DAW"
+        const dawCopy = new Daw({ node: daw.node, offline: true }); // second parameter = "offline DAW"
         const allParts = dawCopy.getAllParts();
         for(const part of allParts)
         {
@@ -151,7 +154,6 @@ PQ_DAW.PLAYER = {
     readFromAutomation(daw)
     {
         const time = daw.getTime();
-        const dom = PQ_DAW.DOM;
 
         for(const track of daw.tracks)
         {
@@ -174,15 +176,15 @@ PQ_DAW.PLAYER = {
 
             if(name == 'input') {
                 let finalValue = parseFloat(controlNode.min) + value * (parseFloat(controlNode.max) - parseFloat(controlNode.min))
-                dom.fakeSetSlider(controlNode, finalValue);
+                DOM.fakeSetSlider(controlNode, finalValue);
             } else if(name == 'select') {
                 const numOptions = controlNode.length;
                 let clampedValue = Math.min(Math.max(value, 0), 0.99);
                 let finalValue = Math.floor(numOptions * clampedValue);
-                dom.fakeSelectDropdownByIndex(controlNode, finalValue);
+                DOM.fakeSelectDropdownByIndex(controlNode, finalValue);
             } else if(name == 'button') {
                 let finalValue = (value >= 0.5) ? "true" : "false";
-                if(controlNode.dataset.toggled != finalValue) { dom.fakeClickButton(controlNode); }
+                if(controlNode.dataset.toggled != finalValue) { DOM.fakeClickButton(controlNode); }
             }
         }
     }

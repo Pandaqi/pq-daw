@@ -1,4 +1,6 @@
-PQ_DAW.PLUGIN_LIST["distortion"] = class {
+import DOM from "../dom"
+
+export default class Distortion {
     constructor(plugin)
     {
         this.plugin = plugin;
@@ -38,14 +40,13 @@ PQ_DAW.PLUGIN_LIST["distortion"] = class {
 
     createHTML(cont, defaults)
     {
-        const dom = PQ_DAW.DOM;
         const an = this.audioNodes.distortion;
         const gain = this.audioNodes.gain;
         const node = this.plugin.node
 
         this.plugin.createDryWetControl(cont, defaults.wet);
 
-        dom.createSlider(node, {
+        DOM.createSlider(node, {
             cont: cont, min: 0, max: 4, value: defaults.oversample, step: 2,
             name: "oversample", text: "Oversample", unit: "none", callback: (val) => { 
                 if(val == 0) { an.oversample = 'none'; }

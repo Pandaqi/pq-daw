@@ -1,29 +1,7 @@
-PQ_DAW.DISPLAY = 
-{
-    init()
-    {
+import AUDIO from "./audio"
+import Color from "./color"
 
-    },
-
-    Color: class {
-        constructor(h, s, l) {
-            this.h = h;
-            this.s = s;
-            this.l = l;
-        }
-    
-        toString()
-        {
-            return "hsl(" + this.h + ", " + this.s + "%, " + this.l + "%)"; 
-        }
-    
-        lighten(dl = 0)
-        {
-            const newLightness = Math.max(Math.min(this.l + dl, 100), 0);
-            return new PQ_DAW.DISPLAY.Color(this.h, this.s, newLightness);
-        }
-    },
-
+export default {
     generateColors(seed, num)
     {
         const arr = [];
@@ -32,7 +10,7 @@ PQ_DAW.DISPLAY =
         for(let i = 0; i < num; i++)
         {
             const hue = (start + i * diff);
-            arr.push(new PQ_DAW.DISPLAY.Color(hue, 50, 50));
+            arr.push(new Color(hue, 50, 50));
         }
         return arr;
     },
@@ -44,7 +22,7 @@ PQ_DAW.DISPLAY =
         const time = daw.getTime();
         for(const track of daw.tracks)
         {
-            PQ_DAW.DISPLAY.visualizeTrack(daw, track, redrawParts);
+            this.visualizeTrack(daw, track, redrawParts);
         }
 
         daw.updateMetadata();
@@ -114,11 +92,11 @@ PQ_DAW.DISPLAY =
 
     visualizeVolume(daw, track)
     {
-        let newVolume = PQ_DAW.AUDIO.getVolumeAsGain(track.getAnalyser());
+        let newVolume = AUDIO.getVolumeAsGain(track.getAnalyser());
         if(newVolume == null) { return; }
 
         const maxTrackVolume = 48;
-        newVolume = 1.0 - (-PQ_DAW.AUDIO.gainToDecibels(newVolume) / maxTrackVolume);
+        newVolume = 1.0 - (-AUDIO.gainToDecibels(newVolume) / maxTrackVolume);
         newVolume = Math.round(newVolume*100); // round and convert to percentage
 
         const oldVolume = parseInt(track.volumeRect.style.height.replace("%", "") || 100);
@@ -126,7 +104,7 @@ PQ_DAW.DISPLAY =
         smoothedVolume = Math.max(Math.min(smoothedVolume, 100), 0);
 
         const hue = 100 * (1 - (smoothedVolume/100.0));
-        const volumeColor = new PQ_DAW.DISPLAY.Color(hue, 50, 50);
+        const volumeColor = new Color(hue, 50, 50);
 
         const sliderLength = daw.config.trackHeight;
         const volSlid = track.getSlider("volume");
@@ -277,7 +255,7 @@ PQ_DAW.DISPLAY =
         ctx.strokeStyle = color.lighten(30).toString();
         ctx.lineWidth = 3;
 
-        const buffer = PQ_DAW.AUDIO.getResource(part.getSource());
+        const buffer = AUDIO.getResource(part.getSource());
         const data = buffer.getChannelData(0);
 
         const secondsToDisplay = this.pixelsToTime(daw, width, false);

@@ -1,4 +1,7 @@
-PQ_DAW.PLUGIN_LIST["equalizer"] = class {
+import AUDIO from "../audio"
+import DOM from "../dom"
+
+export default class Equalizer {
     constructor(plugin)
     {
         this.plugin = plugin;
@@ -83,7 +86,7 @@ PQ_DAW.PLUGIN_LIST["equalizer"] = class {
         const arr = [];
         for(let i = 1; i <= bufferLength; i += stepSize)
         {
-            arr.push( PQ_DAW.AUDIO.toLog(i, 0.5, bufferLength) );
+            arr.push( AUDIO.toLog(i, 0.5, bufferLength) );
         }
         return arr;
     }
@@ -140,7 +143,7 @@ PQ_DAW.PLUGIN_LIST["equalizer"] = class {
             dotRadius: this.canvas.width / 60.0,
             fontSize: this.canvas.width / 60.0,
             volumeRange: 0.5*(this.audioNodes.analyser.maxDecibels - this.audioNodes.analyser.minDecibels) // seems reasonable
-            //volumeRange: -PQ_DAW.AUDIO.gainToDecibels(0.025),
+            //volumeRange: -AUDIO.gainToDecibels(0.025),
         }
 
         const ctx = this.canvas.getContext("2d");
@@ -300,7 +303,7 @@ PQ_DAW.PLUGIN_LIST["equalizer"] = class {
                 const p1 = { x: start.x + controlXOffset, y: start.y };
                 const p2 = { x: end.x - controlXOffset, y: end.y };
                 const interp = j/resolution;
-                const point = PQ_DAW.AUDIO.getBezierCurveTo(interp, start, p1, p2, end);
+                const point = AUDIO.getBezierCurveTo(interp, start, p1, p2, end);
                 
                 const binIndex = Math.round(point.x / curveBinSize);
                 if(binIndex <= lastBinIndex) { continue; }
@@ -421,7 +424,6 @@ PQ_DAW.PLUGIN_LIST["equalizer"] = class {
 
     createHTML(cont, defaults)
     {
-        const dom = PQ_DAW.DOM;
         const node = this.plugin.node;
 
         // create canvas
@@ -448,14 +450,14 @@ PQ_DAW.PLUGIN_LIST["equalizer"] = class {
 
             // frequency
             let id = dataKey + "frequency";
-            dom.createSlider(node, { 
+            DOM.createSlider(node, { 
                 cont: bandCont, min: val.start, max: val.end, value: defaults[id],
                 name: id, text: "Freq", unit: "hertz", audioParams: an.frequency
             });
 
             // Q
             id = dataKey + "q";
-            dom.createSlider(node, { 
+            DOM.createSlider(node, { 
                 cont: bandCont, min: 0.001, max: 4, value: defaults[id], step: 0.01,
                 name: id, text: "Q", unit: "dimensionless", audioParams: an.Q
             });
@@ -465,7 +467,7 @@ PQ_DAW.PLUGIN_LIST["equalizer"] = class {
 
             // gain
             id = dataKey + "gain"
-            dom.createSlider(node, { 
+            DOM.createSlider(node, { 
                 cont: bandCont, min: -20, max: 20, value: defaults[id], step: 0.25,
                 name: id, text: "Gain", unit: "decibels", audioParams: an.gain
             });

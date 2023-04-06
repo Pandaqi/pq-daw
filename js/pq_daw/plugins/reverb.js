@@ -1,4 +1,7 @@
-PQ_DAW.PLUGIN_LIST["reverb"] = class {
+import AUDIO from "../audio"
+import DOM from "../dom"
+
+export default class Reverb {
     constructor(plugin)
     {
         this.plugin = plugin;
@@ -45,7 +48,7 @@ PQ_DAW.PLUGIN_LIST["reverb"] = class {
     // When changed to any value other than "None", we use that instead of the dynamic impulse
     async onImpulseSourceChanged()
     {
-        const val = PQ_DAW.DOM.getProperty(this.plugin.node, "impulse");
+        const val = DOM.getProperty(this.plugin.node, "impulse");
         if(!val) { 
             this.calculateAndUseDynamicImpulse();
             return;
@@ -53,20 +56,19 @@ PQ_DAW.PLUGIN_LIST["reverb"] = class {
 
         const daw = this.plugin.getDaw();
         const loadParams = { extension: "m4a", path: "/tutorials/daw/impulse_responses" }
-        await PQ_DAW.AUDIO.checkAndLoadResources(daw, [val], loadParams);
+        await AUDIO.checkAndLoadResources(daw, [val], loadParams);
 
-        this.audioNodes.convolver.buffer = PQ_DAW.AUDIO.getResource(val);
+        this.audioNodes.convolver.buffer = AUDIO.getResource(val);
     }
 
     calculateAndUseDynamicImpulse()
     {
-        const dom = PQ_DAW.DOM
         const node = this.plugin.node;
 
         const params = {
-            duration: parseFloat(dom.getProperty(node, "duration")),
-            decay: parseFloat(dom.getProperty(node, "decay")),
-            reverse: dom.getProperty(node, "reverse") == "true"
+            duration: parseFloat(DOM.getProperty(node, "duration")),
+            decay: parseFloat(DOM.getProperty(node, "decay")),
+            reverse: DOM.getProperty(node, "reverse") == "true"
         }
 
         const audioBuffer = this.getDynamicImpulse(params);
@@ -128,25 +130,24 @@ PQ_DAW.PLUGIN_LIST["reverb"] = class {
     createHTML(cont, defaults)
     {
         const node = this.plugin.node;
-        const dom = PQ_DAW.DOM;
 
         // the standard stuff
         this.plugin.createDryWetControl(cont, defaults.wet);
         this.plugin.createMakeUpGainControl(cont, this.audioNodes.gain.gain, defaults.gain);
 
         // pre-gain and pre-delay (seemed useful)
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: cont, min: -20, max: 20, value: defaults.pregain, step: 0.1,
             name: "pregain", text: "Pre-Gain", unit: "gain", audioParams: this.audioNodes.preGain.gain
         });
 
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: cont, min: 0.0, max: 5.0, value: defaults.predelay, step: 0.05,
             name: "predelay", text: "Pre-Delay", unit: "time", audioParams: this.audioNodes.preDelay.delayTime
         });
 
         // controls for picking a specific impulse response
-        dom.createDropdown(node, {
+        DOM.createDropdown(node, {
             cont: cont, keys: Object.keys(this.impulseResponses), values: Object.values(this.impulseResponses),
             name: "impulse", "text": "Impulse", callback: this.onImpulseSourceChanged.bind(this)
         })
@@ -156,17 +157,17 @@ PQ_DAW.PLUGIN_LIST["reverb"] = class {
         subCont.classList.add("effect-subsection");
         cont.appendChild(subCont);
         
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: subCont, min: 0.1, max: 20, value: defaults.duration, step: 0.1,
             name: "duration", text: "Duration", unit: "time", callback: this.onDynamicParametersChanged.bind(this)
         });
 
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: subCont, min: 0.0, max: 100.0, value: defaults.decay, step: 0.5,
             name: "decay", text: "Decay", unit: "none", callback: this.onDynamicParametersChanged.bind(this)
         });
 
-        dom.createButton(node, {
+        DOM.createButton(node, {
             cont: subCont, value: defaults.reverse,
             name: "reverse", text: "Reverse", callback: this.onDynamicParametersChanged.bind(this)
         })

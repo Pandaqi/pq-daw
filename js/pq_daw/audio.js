@@ -1,5 +1,5 @@
 // responsible for loading audio and handling the audio context
-PQ_DAW.AUDIO = {
+export default {
     init()
     {
         this.buffer = {};

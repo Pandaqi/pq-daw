@@ -1,5 +1,12 @@
+import AUDIO from "./audio"
+import DISPLAY from "./display"
+import DOM from "./dom"
+import PLAYER from "./player"
+import Track from "./track"
+import Shortcuts from "./dom/shortcuts"
+
 // represents one full daw interface, holds its tracks
-PQ_DAW.Daw = class {
+export default class Daw {
     constructor(params = {})
     {
         this.setupContexts(params);
@@ -39,7 +46,7 @@ PQ_DAW.Daw = class {
         removeTrackBtn.addEventListener("click", () => this.removeTrack({ redraw: true }));
 
         const downloadBtn = node.getElementsByClassName("download-btn")[0];
-        downloadBtn.addEventListener("click", () => PQ_DAW.PLAYER.render(this) );
+        downloadBtn.addEventListener("click", () => PLAYER.render(this) );
 
         const parentContainer = params.parent;
         if(!parentContainer) { return; }
@@ -50,7 +57,6 @@ PQ_DAW.Daw = class {
     setupHTML(params)
     {
         const node = params.node || { dataset: {} };
-        const dom = PQ_DAW.DOM;
 
         for(const key in this.defaults)
         {
@@ -64,7 +70,7 @@ PQ_DAW.Daw = class {
 
         for(const key in node.dataset)
         {
-            dom.setProperty(main, key, node.dataset[key]);
+            DOM.setProperty(main, key, node.dataset[key]);
         }
 
         // caption
@@ -95,7 +101,7 @@ PQ_DAW.Daw = class {
         {
             const btn = document.createElement("button");
             btn.classList.add(key + "-btn", "icon", "icon-" + key);
-            btn.title = dom.getTitleForShortcut("all", { name: key });
+            btn.title = Shortcuts.getTitleFor("all", { name: key });
             controls.appendChild(btn);
         }
 
@@ -144,7 +150,7 @@ PQ_DAW.Daw = class {
         params.parent = this;
         params.num = this.tracks.length;
 
-        const newTrack = new PQ_DAW.Track(params);
+        const newTrack = new Track(params);
         this.tracks.push(newTrack);
         if(params.redraw) { this.visualize(); }
         return newTrack;
@@ -178,7 +184,7 @@ PQ_DAW.Daw = class {
     checkSoloActive()
     {
         let hasSolo = false;
-        const getProp = PQ_DAW.DOM.getProperty;
+        const getProp = DOM.getProperty;
         for(const track of this.tracks)
         {
             if(getProp(track.node, "solo") != "true") { continue; }
@@ -219,14 +225,13 @@ PQ_DAW.Daw = class {
 
     updateMetadata()
     {
-        const dom = PQ_DAW.DOM;
         this.metadataContainer = this.node.getElementsByClassName("daw-metadata")[0];
 
         const tempo = this.metadataContainer.getElementsByClassName("tempo-metadata")[0];
-        tempo.innerHTML = "Tempo = " + dom.getProperty(this.node, "tempo") + " BPM";
+        tempo.innerHTML = "Tempo = " + DOM.getProperty(this.node, "tempo") + " BPM";
 
         const duration = this.metadataContainer.getElementsByClassName("duration-metadata")[0];
-        duration.innerHTML = "Duration = " + Math.round(parseFloat(dom.getProperty(this.node, "duration"))*100)/100 + " s";
+        duration.innerHTML = "Duration = " + Math.round(parseFloat(DOM.getProperty(this.node, "duration"))*100)/100 + " s";
     
         const numTracks = this.metadataContainer.getElementsByClassName("numtracks-metadata")[0];
         numTracks.innerHTML = "# Tracks = " + (this.tracks.length - 1);
@@ -267,7 +272,7 @@ PQ_DAW.Daw = class {
     async loadResources()
     {
         const allPartSources = this.getAllPartSources();
-        await PQ_DAW.AUDIO.checkAndLoadResources(this, allPartSources);
+        await AUDIO.checkAndLoadResources(this, allPartSources);
         this.onLoadFinished();
     }
 
@@ -293,16 +298,16 @@ PQ_DAW.Daw = class {
     {
         if(!this.isPlaying()) { return; }
         
-        await PQ_DAW.PLAYER.stop(this);
-        await PQ_DAW.PLAYER.play(this);
+        await PLAYER.stop(this);
+        await PLAYER.play(this);
     }
     
     async requestRestartForCallback(callback)
     {
         const isPlaying = this.isPlaying();
-        if(isPlaying) { await PQ_DAW.PLAYER.stop(this); }
+        if(isPlaying) { await PLAYER.stop(this); }
         callback();
-        if(isPlaying) { await PQ_DAW.PLAYER.play(this); }
+        if(isPlaying) { await PLAYER.play(this); }
     }
 
     getPixelsPerSecond()
@@ -349,12 +354,7 @@ PQ_DAW.Daw = class {
     {
         if(this.isOffline()) { return; }
         this.generateConfig();
-        PQ_DAW.DISPLAY.visualizeDaw(this, redrawParts);
-    }
-
-    getTracks()
-    {
-        return this.tracks;
+        DISPLAY.visualizeDaw(this, redrawParts);
     }
 
     getTracksContainer()
@@ -392,23 +392,23 @@ PQ_DAW.Daw = class {
 
         this.config.pixelsPerSecond = this.config.trackWidth / this.config.duration;
         this.config.secondsPerBeat = this.config.tempo / 60.0;
-        this.config.colors = PQ_DAW.DISPLAY.generateColors(this.visualSeed, this.tracks.length);
+        this.config.colors = DISPLAY.generateColors(this.visualSeed, this.tracks.length);
     }
 
     async togglePlayPause()
     {
         this.playing = !this.playing;
         if(this.playing) {
-            await PQ_DAW.PLAYER.play(this);
+            await PLAYER.play(this);
         } else {
-            await PQ_DAW.PLAYER.stop(this, false);
+            await PLAYER.stop(this, false);
         }
     }
 
     async reset()
     {
         this.playing = false;
-        await PQ_DAW.PLAYER.stop(this, true);
+        await PLAYER.stop(this, true);
     }
 
     hasMasterTrack(cont)
@@ -479,12 +479,12 @@ PQ_DAW.Daw = class {
 
     setDuration(d)
     {
-        PQ_DAW.DOM.setProperty(this.node, "duration", d);
+        DOM.setProperty(this.node, "duration", d);
     }
 
     getDuration()
     {
-        return parseFloat(PQ_DAW.DOM.getProperty(this.node, "duration"));
+        return parseFloat(DOM.getProperty(this.node, "duration"));
     }
 
     getConstantEffects()

@@ -1,6 +1,11 @@
+import AUDIO from "./audio"
+import DISPLAY from "./display"
+import DOM from "./dom"
+import Dragger from "./dom/dragger"
+import Drawable from "./dom/drawable"
 
 // represents one part; the actual atomic element of sound
-PQ_DAW.Part = class {
+export default class Part {
     constructor(params)
     {
         this.track = params.parent;
@@ -41,7 +46,7 @@ PQ_DAW.Part = class {
         // DOM events for shortcuts and stuff
         if(this.receiveDOMevents)
         {
-            this.getCanvas().addEventListener("click", () => PQ_DAW.DOM.changeFocusTo(this), false);
+            this.getCanvas().addEventListener("click", () => DOM.changeFocusTo(this), false);
         }
     }
 
@@ -82,11 +87,10 @@ PQ_DAW.Part = class {
     createDraggers()
     {
         if(!this.allowDrag) { return; }
-        const dom = PQ_DAW.DOM;
 
         this.minWidth = 15;
         this.edgeDragMargin = 30;
-        this.moveDragger = new dom.Dragger(this.getCanvas());
+        this.moveDragger = new Dragger(this.getCanvas());
         this.moveDragger.callback = async (delta) => {
             if(Math.abs(delta.x) == 0) { return; }
 
@@ -100,7 +104,7 @@ PQ_DAW.Part = class {
         this.startNode.style.width = this.edgeDragMargin + "px";
         this.node.appendChild(this.startNode);
 
-        this.startDragger = new dom.Dragger(this.startNode);
+        this.startDragger = new Dragger(this.startNode);
         this.startDragger.callback = async (delta) => {
             if(Math.abs(delta.x) == 0) { return; }
 
@@ -126,7 +130,7 @@ PQ_DAW.Part = class {
         this.endNode.style.width = this.edgeDragMargin + "px";
         this.node.appendChild(this.endNode);
 
-        this.endDragger = new dom.Dragger(this.endNode);
+        this.endDragger = new Dragger(this.endNode);
         this.endDragger.callback = async (delta) => {
             if(Math.abs(delta.x) == 0) { return; }
 
@@ -140,7 +144,7 @@ PQ_DAW.Part = class {
     {
         if(!this.drawOnCanvas) { return; }
 
-        this.canvasDrawable = new PQ_DAW.DOM.Drawable(this, this.getCanvas());
+        this.canvasDrawable = new Drawable(this, this.getCanvas());
         
         const createFromGivenData = params.automation;
         if(createFromGivenData) { 
@@ -151,8 +155,6 @@ PQ_DAW.Part = class {
     setupHTML(params)
     {
         const node = params.node || { dataset: {} };
-        const dom = PQ_DAW.DOM;
-
         for(const key in this.defaults)
         {
             if(key in node.dataset) { continue; }
@@ -165,7 +167,7 @@ PQ_DAW.Part = class {
 
         for(const key in node.dataset)
         {
-            dom.setProperty(main, key, node.dataset[key]);
+            DOM.setProperty(main, key, node.dataset[key]);
         }
         
         this.changeSetupBasedOnPartType(main, params);
@@ -194,7 +196,7 @@ PQ_DAW.Part = class {
 
         if(this.track.isType("automation"))
         {
-            PQ_DAW.DOM.setProperty(node, "type", "automation");
+            DOM.setProperty(node, "type", "automation");
 
             this.fullLength = true;
             this.allowDrag = false;
@@ -252,11 +254,11 @@ PQ_DAW.Part = class {
 
     async calculateCorrectTimeParamsFromDOM(modifyOffset = false)
     {
-        const setProp = PQ_DAW.DOM.setProperty;
+        const setProp = DOM.setProperty;
 
         const oldStart = this.getStartTime();
-        let start = PQ_DAW.DISPLAY.pixelsToTime(this.getDaw(), this.getLeftPos(), false);
-        let duration = PQ_DAW.DISPLAY.pixelsToTime(this.getDaw(), this.getWidth(), false);
+        let start = DISPLAY.pixelsToTime(this.getDaw(), this.getLeftPos(), false);
+        let duration = DISPLAY.pixelsToTime(this.getDaw(), this.getWidth(), false);
 
         if(modifyOffset)
         {
@@ -286,8 +288,8 @@ PQ_DAW.Part = class {
         if(this.dontVisualize) { return; }
 
         const node = this.node;
-        const getProp = PQ_DAW.DOM.getProperty;
-        const setProp = PQ_DAW.DOM.setProperty;
+        const getProp = DOM.getProperty;
+        const setProp = DOM.setProperty;
 
         const minDuration = 0.25;
         let duration = this.getDuration();
@@ -299,7 +301,7 @@ PQ_DAW.Part = class {
         let totalDuration = parseFloat(getProp(node, "totalduration"));
         if(isNaN(totalDuration) && this.hasLoadableSource())
         {
-            totalDuration = PQ_DAW.AUDIO.getResource(this.getSource()).duration;
+            totalDuration = AUDIO.getResource(this.getSource()).duration;
         }
 
         const knownParams = [!isNaN(start), !isNaN(end), !isNaN(duration)];
@@ -389,11 +391,11 @@ PQ_DAW.Part = class {
         if(!this.allowPlaying) { return; }
 
         if(this.playing) {
-            this.sound = PQ_DAW.AUDIO.play(this, this.getTimeDiff(curTimeDAW), startOffset)
+            this.sound = AUDIO.play(this, this.getTimeDiff(curTimeDAW), startOffset)
             this.sound.connect(this.gainNode);
         } else {
             if(!this.sound) { return; }
-            PQ_DAW.AUDIO.stop(this.sound);
+            AUDIO.stop(this.sound);
             this.sound.disconnect(this.gainNode);
             this.sound = null;
         }
@@ -411,37 +413,37 @@ PQ_DAW.Part = class {
 
     getSource()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "source")
+        return DOM.getProperty(this.node, "source")
     }
 
     getOffset()
     {
-        return parseFloat(PQ_DAW.DOM.getProperty(this.node, "offset"));
+        return parseFloat(DOM.getProperty(this.node, "offset"));
     }
 
     getStartTime()
     {
-        return parseFloat(PQ_DAW.DOM.getProperty(this.node, "start"));
+        return parseFloat(DOM.getProperty(this.node, "start"));
     }
 
     getEndTime()
     {
-        return parseFloat(PQ_DAW.DOM.getProperty(this.node, "end"));
+        return parseFloat(DOM.getProperty(this.node, "end"));
     }
 
     getDuration()
     {
-        return parseFloat(PQ_DAW.DOM.getProperty(this.node, "duration"));
+        return parseFloat(DOM.getProperty(this.node, "duration"));
     }
 
     getFadeStart()
     {
-        return parseFloat(PQ_DAW.DOM.getProperty(this.node, "fadestart"));
+        return parseFloat(DOM.getProperty(this.node, "fadestart"));
     }
 
     getFadeEnd()
     {
-        return parseFloat(PQ_DAW.DOM.getProperty(this.node, "fadeend"));
+        return parseFloat(DOM.getProperty(this.node, "fadeend"));
     }
 
     changeFade(df = 0.025)
@@ -449,11 +451,11 @@ PQ_DAW.Part = class {
         const fs = Math.max(this.getFadeStart() + df, 0);
         const fe = Math.max(this.getFadeEnd() + df, 0);
 
-        PQ_DAW.DOM.setProperty(this.node, "fadestart", Math.round(fs*100)/100);
-        PQ_DAW.DOM.setProperty(this.node, "fadeend", Math.round(fe*100)/100);
+        DOM.setProperty(this.node, "fadestart", Math.round(fs*100)/100);
+        DOM.setProperty(this.node, "fadeend", Math.round(fe*100)/100);
 
         // @IMPROV: nasty dependencies here, can we change that?
-        PQ_DAW.DISPLAY.visualizePart(this.getDaw(), this.track, this);
+        DISPLAY.visualizePart(this.getDaw(), this.track, this);
     }
 
     getFadeValueAt(time = 0, bounds)
@@ -480,7 +482,7 @@ PQ_DAW.Part = class {
 
     getType()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "type");
+        return DOM.getProperty(this.node, "type");
     }
 
     hasLoadableSource()
@@ -493,7 +495,7 @@ PQ_DAW.Part = class {
     {
         for(const key in dataset)
         {
-            PQ_DAW.DOM.setProperty(this.node, key, dataset[key]);
+            DOM.setProperty(this.node, key, dataset[key]);
         }
     }
 

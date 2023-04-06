@@ -1,7 +1,28 @@
-PQ_DAW.PLUGIN_LIST = {};
+import AUDIO from "./audio"
+import DISPLAY from "./display"
+import DOM from "./dom"
+import Reverb from "./plugins/reverb"
+import Noise from "./plugins/noise"
+import Gain from "./plugins/gain"
+import Equalizer from "./plugins/equalizer"
+import Distortion from "./plugins/distortion"
+import Delay from "./plugins/delay"
+import Compressor from "./plugins/compressor"
+
+
+// @TODO: allow user to extend this from the outside?
+const PLUGIN_LIST = {
+    reverb: Reverb,
+    noise: Noise,
+    gain: Gain,
+    equalizer: Equalizer,
+    distortion: Distortion,
+    delay: Delay,
+    compressor: Compressor
+};
 
 // handles the visual and data for one plugin (of given type)
-PQ_DAW.Plugin = class {
+export default class Plugin {
     constructor(params)
     {
         this.track = params.parent;
@@ -14,7 +35,7 @@ PQ_DAW.Plugin = class {
 
         if(this.existingHTML) { this.node = this.existingHTML; }
 
-        const interfaceClass = PQ_DAW.PLUGIN_LIST[this.type];
+        const interfaceClass = PLUGIN_LIST[this.type];
         this.plugin = new interfaceClass(this);
 
         this.createEssentialHTML();
@@ -32,7 +53,7 @@ PQ_DAW.Plugin = class {
         this.createCustomHTML();
 
         const startOpen = this.track.dataset.show.includes(this.type);
-        if(startOpen) { PQ_DAW.DOM.fakeClickButton(this.button); }
+        if(startOpen) { DOM.fakeClickButton(this.button); }
     }
 
     setConstant(val)
@@ -71,7 +92,7 @@ PQ_DAW.Plugin = class {
         this.visible = val;
         if(val) { this.node.style.display = "block"; }
         else { this.node.style.display = "none"; }
-        this.node.style.borderColor = PQ_DAW.DISPLAY.getColorForTrack(this.track).lighten(-30).toString();
+        this.node.style.borderColor = DISPLAY.getColorForTrack(this.track).lighten(-30).toString();
     }
 
     createEssentialNodes()
@@ -174,8 +195,8 @@ PQ_DAW.Plugin = class {
         desc.innerHTML = this.plugin.desc || defaultDesc;
         headerCont.appendChild(desc);
 
-        const defaultBypassed = PQ_DAW.DOM.getProperty(this.node, "bypass") == "true";
-        PQ_DAW.DOM.createButton(this.node, {
+        const defaultBypassed = DOM.getProperty(this.node, "bypass") == "true";
+        DOM.createButton(this.node, {
             cont: headerCont, value: defaultBypassed,
             name: "bypass", text: "Bypass", callback: this.onBypassToggle.bind(this)
         })
@@ -208,7 +229,7 @@ PQ_DAW.Plugin = class {
 
     createDryWetControl(cont, defValue = 0.5)
     {
-        PQ_DAW.DOM.createSlider(this.node, { 
+        DOM.createSlider(this.node, { 
             cont: cont, min: 0, max: 1, value: defValue, step: 0.01, 
             name: "wet", text: "Dry/Wet", unit: "percentage", 
             callback: (val) => { this.setWet(val); } 
@@ -218,7 +239,7 @@ PQ_DAW.Plugin = class {
     createMakeUpGainControl(cont, audioParam, defValue = 0.0, bounds = { min: -20, max: 20 })
     {
         const step = (bounds.max - bounds.min) / 128.0;
-        PQ_DAW.DOM.createSlider(this.node, {
+        DOM.createSlider(this.node, {
             cont: cont, min: bounds.min, max: bounds.max, value: defValue, step: step,
             name: "gain", text: "Gain", unit: "gain", audioParams: audioParam
         })
@@ -253,18 +274,17 @@ PQ_DAW.Plugin = class {
 
     generateDefaults(defaults = {})
     {
-        const dom = PQ_DAW.DOM;
         const node = this.node;
         if(!node) { return structuredClone(defaults); }
 
         for(const key in defaults)
         {
-            let knownValue = dom.getProperty(node, key);
+            let knownValue = DOM.getProperty(node, key);
             if(!knownValue) { continue; }
 
             // some units convert between slider value and real value; so convert back if we encounter those
             let unitType = node.querySelectorAll("*[name='" + key + "']")[0].dataset.unit;
-            if(unitType == "gain") { knownValue = PQ_DAW.AUDIO.gainToDecibels(parseFloat(knownValue)); }
+            if(unitType == "gain") { knownValue = AUDIO.gainToDecibels(parseFloat(knownValue)); }
 
             defaults[key] = knownValue;
         }

@@ -1,4 +1,6 @@
-PQ_DAW.PLUGIN_LIST["delay"] = class {
+import DOM from "../dom"
+
+export default class Delay {
     constructor(plugin)
     {
         this.plugin = plugin;
@@ -17,7 +19,7 @@ PQ_DAW.PLUGIN_LIST["delay"] = class {
     createNodes()
     {
         const node = this.plugin.node;
-        const getProp = PQ_DAW.DOM.getProperty;
+        const getProp = DOM.getProperty;
 
         // disconnect all existing outbound connections from us
         this.audioNodes = { delay: [], gain: [], pan: [] }
@@ -122,7 +124,6 @@ PQ_DAW.PLUGIN_LIST["delay"] = class {
     createHTML(cont, defaults)
     {
         const node = this.plugin.node;
-        const dom = PQ_DAW.DOM;
   
         const gainCallback = (val) => {
             const curTime = this.plugin.getContext().currentTime;
@@ -143,27 +144,27 @@ PQ_DAW.PLUGIN_LIST["delay"] = class {
         this.plugin.createDryWetControl(cont, defaults.wet);
 
         // feedback slider
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: cont, min: 0, max: 1, value: defaults.feedback, step: 0.01,
             name: "feedback", text: "Feedback", unit: "percentage", callback: gainCallback 
         });
         
         // timing slider
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: cont, min: 0.03, max: 4, value: defaults.delayTime, step: 0.01, 
             name: "delayTime", text: "Delay", unit: "time", callback: delayCallback 
         });
 
         // repetition slider 
         // (@NOTE: destroys and recreates nodes!)
-        dom.createSlider(node, {
+        DOM.createSlider(node, {
             cont: cont, min: 0, max: 10, value: defaults.numRepetitions, 
             name: "numRepetitions", text: "Repetitions", unit: "none", callback: (val) => { this.plugin.createCustomNodes(); } 
         });
 
         // pingpong button
         // (@NOTE: destroys and recreates nodes!)
-        dom.createButton(node, {
+        DOM.createButton(node, {
             cont: cont, value: defaults.pingPong,
             name: "pingPong", text: "Ping-Pong", callback: (val) => { this.plugin.createCustomNodes(); }
         })

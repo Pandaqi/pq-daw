@@ -1,4 +1,7 @@
-PQ_DAW.PLUGIN_LIST["compressor"] = class {
+import AUDIO from "../audio"
+import DOM from "../dom"
+
+export default class Compressor {
     constructor(plugin)
     {
         this.plugin = plugin;
@@ -27,8 +30,8 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
         const gainNode = ctx.createGain();
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 1024;
-        analyser.maxDecibels = PQ_DAW.AUDIO.gainToDecibels(this.maxGain);
-        analyser.minDecibels = PQ_DAW.AUDIO.gainToDecibels(this.minGain);
+        analyser.maxDecibels = AUDIO.gainToDecibels(this.maxGain);
+        analyser.minDecibels = AUDIO.gainToDecibels(this.minGain);
 
         this.audioNodes = { compressor: compressor, gain: gainNode, analyser: analyser }
         this.plugin.setWet(1.0); // compressor node is fully wet, no knob to change that
@@ -40,7 +43,6 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
 
     createHTML(cont, defaults)
     {
-        const dom = PQ_DAW.DOM;
         const an = this.audioNodes.compressor;
         const gain = this.audioNodes.gain;
         const node = this.plugin.node
@@ -49,32 +51,32 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
         cont.appendChild(canv);
         this.canvas = canv; 
 
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: cont, min: -50, max: 0, value: defaults.threshold, step: 0.25, 
             name: "threshold", text: "Threshold", unit: "decibels", audioParams: an.threshold 
         });
 
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: cont, min: 0, max: 40, value: defaults.knee, step: 0.5, 
             name: "knee", text: "Knee", unit: "decibels", audioParams: an.knee 
         });
 
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: cont, min: 1, max: 20, value: defaults.ratio, step: 0.5, 
             name: "ratio", text: "Ratio", unit: "ratio", audioParams: an.ratio 
         });
 
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: cont, min: 0, max: 1, value: defaults.attack, step: 0.01, 
             name: "attack", text: "Attack", unit: "time", audioParams: an.attack 
         });
 
-        dom.createSlider(node, { 
+        DOM.createSlider(node, { 
             cont: cont, min: 0, max: 1, value: defaults.release, step: 0.01, 
             name: "release", text: "Release", unit: "time", audioParams: an.release 
         });
 
-        dom.createSlider(node, {
+        DOM.createSlider(node, {
             cont: cont, min: -4, max: 10, value: defaults.gain, step: 0.25,
             name: "gain", text: "Gain", unit: "gain", audioParams: gain.gain
         })
@@ -151,8 +153,8 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
         const maxGain = cfg.maxGain;
         const stepGain = (maxGain - minGain) / numLines;
 
-        const minDecibels = PQ_DAW.AUDIO.gainToDecibels(cfg.minGain);
-        const maxDecibels = PQ_DAW.AUDIO.gainToDecibels(cfg.maxGain);
+        const minDecibels = AUDIO.gainToDecibels(cfg.minGain);
+        const maxDecibels = AUDIO.gainToDecibels(cfg.maxGain);
         const stepDecibels = (maxDecibels - minDecibels) / numLines;
 
         const stepX = w / numLines;
@@ -180,7 +182,7 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
             if(this.graphStyle == "log")
             {
                 const interpGain = minGain + i * stepGain;
-                volume = PQ_DAW.AUDIO.gainToDecibels(interpGain); 
+                volume = AUDIO.gainToDecibels(interpGain); 
             } else if(this.graphStyle == "linear") {
                 volume = minDecibels + i * stepDecibels;
             }  
@@ -205,7 +207,7 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
 
     visualizeCompressionCurve(cfg)
     {
-        const getProp = PQ_DAW.DOM.getProperty;
+        const getProp = DOM.getProperty;
         const node = this.plugin.node;
         const ctx = this.canvas.getContext("2d");
 
@@ -218,20 +220,20 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
         const stepX = w * step;
         const stepY = h * step;
 
-        const minDecibels = PQ_DAW.AUDIO.gainToDecibels(cfg.minGain);
-        const maxDecibels = PQ_DAW.AUDIO.gainToDecibels(cfg.maxGain);
+        const minDecibels = AUDIO.gainToDecibels(cfg.minGain);
+        const maxDecibels = AUDIO.gainToDecibels(cfg.maxGain);
 
         const line = [];
         const thresh = parseFloat(getProp(node, "threshold"));
         const knee = parseFloat(getProp(node, "knee"));
         const ratio = parseFloat(getProp(node, "ratio"));
-        //const bezierCurve = PQ_DAW.AUDIO.getSimpleBezierCurveTo;
+        //const bezierCurve = AUDIO.getSimpleBezierCurveTo;
 
         const thresholdDb = thresh;
         const kneeDb = thresh + knee
 
-        const thresholdGain = PQ_DAW.AUDIO.decibelsToGain(thresh);
-        const kneeGain = Math.min(PQ_DAW.AUDIO.decibelsToGain(kneeDb), 1.0);
+        const thresholdGain = AUDIO.decibelsToGain(thresh);
+        const kneeGain = Math.min(AUDIO.decibelsToGain(kneeDb), 1.0);
 
         
 
@@ -245,7 +247,7 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
             let gain = (x/w);
             if(this.graphStyle == "linear") { 
                 let db = minDecibels + (maxDecibels - minDecibels) * gain;
-                gain = PQ_DAW.AUDIO.decibelsToGain(db); 
+                gain = AUDIO.decibelsToGain(db); 
             }
 
             const goLinear = gain < thresholdGain;
@@ -308,14 +310,14 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
 
         // reduction meter (rectangle coming from above, read from audio node)
         const volReduction = this.audioNodes.compressor.reduction;
-        const fullReduction = PQ_DAW.AUDIO.gainToDecibels(cfg.minGain);
+        const fullReduction = AUDIO.gainToDecibels(cfg.minGain);
 
         const reducMargin = 40;
         const reducEdgeMargin = 10;
         const reducWidth = cfg.oX - reducMargin - reducEdgeMargin;
 
-        const minDecibels = PQ_DAW.AUDIO.gainToDecibels(cfg.minGain);
-        const maxDecibels = PQ_DAW.AUDIO.gainToDecibels(cfg.maxGain);
+        const minDecibels = AUDIO.gainToDecibels(cfg.minGain);
+        const maxDecibels = AUDIO.gainToDecibels(cfg.maxGain);
 
         const reducRatio = (volReduction/fullReduction);
         const height = cfg.actualHeight * reducRatio;
@@ -326,9 +328,9 @@ PQ_DAW.PLUGIN_LIST["compressor"] = class {
         ctx.fillRect(cfg.oX + cfg.actualWidth + reducMargin, cfg.oY, reducWidth, height);
 
         // volume meter (shown as a dot on the curve)
-        const vol = PQ_DAW.AUDIO.getVolumeAsGain(this.audioNodes.analyser);
-        const volDb = PQ_DAW.AUDIO.gainToDecibels(vol);
-        let volRatio = PQ_DAW.AUDIO.decibelsToGain(volDb);
+        const vol = AUDIO.getVolumeAsGain(this.audioNodes.analyser);
+        const volDb = AUDIO.gainToDecibels(vol);
+        let volRatio = AUDIO.decibelsToGain(volDb);
         if(this.graphStyle == "linear") { volRatio = (volDb-minDecibels) / (maxDecibels - minDecibels); }
 
         const volInPixels = cfg.oX + volRatio * cfg.actualWidth;

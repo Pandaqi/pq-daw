@@ -1,4 +1,6 @@
-PQ_DAW.PLUGIN_LIST["noise"] = class {
+import DOM from "../dom"
+
+export default class Noise {
     constructor(plugin)
     {
         this.plugin = plugin;
@@ -24,12 +26,12 @@ PQ_DAW.PLUGIN_LIST["noise"] = class {
 
     setNoiseType(val)
     {
-        PQ_DAW.DOM.setProperty(this.plugin.node, "noise", val);
+        DOM.setProperty(this.plugin.node, "noise", val);
     }
 
     getNoiseType()
     {
-        return PQ_DAW.DOM.getProperty(this.plugin.node, "noise");
+        return DOM.getProperty(this.plugin.node, "noise");
     }
 
     convertToWhiteNoise(data, bufferSize)
@@ -126,7 +128,7 @@ PQ_DAW.PLUGIN_LIST["noise"] = class {
             keys.push(key + " noise");
         }
 
-        PQ_DAW.DOM.createDropdown(this.plugin.node, {
+        DOM.createDropdown(this.plugin.node, {
             cont: cont, keys: keys, values: Object.keys(this.noiseBuffers),
             name: "noise", "text": "Type", callback: this.onNoiseTypeChanged.bind(this)
         })

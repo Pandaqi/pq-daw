@@ -1,6 +1,12 @@
+import DISPLAY from "./display"
+import DOM from "./dom"
+import Part from "./part"
+import Recorder from "./recorder"
+import Plugin from "./plugin"
+import Shortcuts from "./dom/shortcuts"
 
 // represents one track, holds its parts
-PQ_DAW.Track = class {
+export default class Track {
     constructor(params)
     {
         this.daw = params.parent;
@@ -26,8 +32,6 @@ PQ_DAW.Track = class {
 
         this.node = this.setupHTML(params);
         
-        const dom = PQ_DAW.DOM;
-
         const node = this.node;
         this.volumeDisplay = node.getElementsByClassName("volume-display")[0];
         this.volumeRect = node.getElementsByClassName("volume-display-rect")[0];
@@ -35,6 +39,7 @@ PQ_DAW.Track = class {
         this.trackControls = node.getElementsByClassName("track-controls")[0];
         this.trackContent = node.getElementsByClassName("track-content")[0];
 
+            
         this.timeGridCanvas = this.trackContent.getElementsByClassName("time-grid")[0].getElementsByTagName("canvas")[0];
         this.cursor = this.trackContent.getElementsByClassName("time-cursor")[0];
         this.typeLabel = this.trackContent.getElementsByClassName("track-type-label")[0];
@@ -45,20 +50,19 @@ PQ_DAW.Track = class {
         // why? so click events on parts can capture it first and stop it if needed
         // Track CONTENT uses "mouseup", otherwise we use "click"
         this.trackContent.addEventListener("mouseup", this.placeTimeCursorAtClick.bind(this), false);
-        this.node.addEventListener("click", () => dom.changeFocusTo(this), true);
+        this.node.addEventListener("click", () => DOM.changeFocusTo(this), true);
         
         this.trackName = this.node.getElementsByClassName("track-name")[0];
         if(this.allowEditingName)
         {
-            dom.createEditableText({ node: this.trackName, callback: this.setNameFromDOM.bind(this) });
+            DOM.createEditableText({ node: this.trackName, callback: this.setNameFromDOM.bind(this) });
         }
 
         this.outName = this.node.getElementsByClassName("out-name")[0];
         if(this.allowEditingOut)
         {
-            dom.createEditableText({ node: this.outName, callback: this.setOutFromDOM.bind(this) });
+            DOM.createEditableText({ node: this.outName, callback: this.setOutFromDOM.bind(this) });
         }
-
 
         this.containers = {
             controls: this.trackControls,
@@ -78,13 +82,13 @@ PQ_DAW.Track = class {
         {  
             const slider = node.getElementsByClassName(key)[0];
             if(!slider) { continue; }
-            const defaultValue = parseFloat(dom.getProperty(this.node, key));
+            const defaultValue = parseFloat(DOM.getProperty(this.node, key));
             this.sliders[key] = slider;
-            dom.connectSlider(slider, this, (guiNode, ownerNode) => {
+            DOM.connectSlider(slider, this, (guiNode, ownerNode) => {
                 ownerNode.changeSlider(key);
             });
 
-            dom.fakeSetSlider(slider, defaultValue);
+            DOM.fakeSetSlider(slider, defaultValue);
         }
 
         // buttons
@@ -97,24 +101,24 @@ PQ_DAW.Track = class {
             this.buttons[key] = btn;
 
             const daw = this.daw;
-            dom.connectButton(btn, this, (guiNode, ownerNode) => {
-                dom.setProperty(ownerNode.node, key, guiNode.dataset.toggled);
+            DOM.connectButton(btn, this, (guiNode, ownerNode) => {
+                DOM.setProperty(ownerNode.node, key, guiNode.dataset.toggled);
                 ownerNode.recalculateVolume();
                 if(key == "solo") { daw.recalculateAllVolumes(); }
             });
 
-            const defaultValue = dom.getProperty(this.node, key);
-            if(defaultValue == "true") { dom.fakeClickButton(btn); }
+            const defaultValue = DOM.getProperty(this.node, key);
+            if(defaultValue == "true") { DOM.fakeClickButton(btn); }
 
             if(key == "reset")
             {
-                dom.makeButtonSingleClick(btn);
+                DOM.makeButtonSingleClick(btn);
                 btn.addEventListener("click", (ev) => { this.reset(); })
             }
         }
 
         this.showHideControls();
-        this.setVisible(!(dom.getProperty(this.node, "visible") == "false"));
+        this.setVisible(!(DOM.getProperty(this.node, "visible") == "false"));
     }
 
     changeSetupBasedOnTrackType(node)
@@ -127,7 +131,7 @@ PQ_DAW.Track = class {
         this.allowEditingName = false;
         this.addBypassControls = false;
 
-        const trackType = PQ_DAW.DOM.getProperty(node, "type");
+        const trackType = DOM.getProperty(node, "type");
 
         if(trackType == "automation")
         {
@@ -143,7 +147,6 @@ PQ_DAW.Track = class {
     setupHTML(params)
     {
         const node = params.node || { dataset: {} };
-        const dom = PQ_DAW.DOM;
 
         for(const key in this.defaults)
         {
@@ -171,7 +174,7 @@ PQ_DAW.Track = class {
 
         for(const key in node.dataset)
         {
-            dom.setProperty(main, key, node.dataset[key]);
+            DOM.setProperty(main, key, node.dataset[key]);
         }
 
         this.changeSetupBasedOnTrackType(main);
@@ -190,12 +193,12 @@ PQ_DAW.Track = class {
 
         const trackName = document.createElement("span");
         trackName.classList.add("track-name");
-        trackName.innerHTML = dom.getProperty(main, "id");
+        trackName.innerHTML = DOM.getProperty(main, "id");
         metadata.appendChild(trackName);
 
         const outName = document.createElement("span");
         outName.classList.add("out-name");
-        outName.innerHTML = dom.getProperty(main, "out");
+        outName.innerHTML = DOM.getProperty(main, "out");
         metadata.appendChild(outName);
 
         if(!this.showOut) { outName.style.display = "none"; }
@@ -214,7 +217,7 @@ PQ_DAW.Track = class {
             const btn = document.createElement("button");
             btn.classList.add(key);
             btn.name = key;
-            btn.title = dom.getTitleForShortcut("tracks", { name: key });
+            btn.title = Shortcuts.getTitleFor("tracks", { name: key });
             btn.innerHTML = buttonKeys[key];
             buttons.appendChild(btn);
         }
@@ -232,7 +235,7 @@ PQ_DAW.Track = class {
         pan.min = -100;
         pan.max = 100;
         pan.step = 1;
-        pan.title = PQ_DAW.DOM.getTitleForShortcut("tracks", { name: "pan" })
+        pan.title = Shortcuts.getTitleFor("tracks", { name: "pan" })
         core.appendChild(pan);
 
         if(!this.createNodes) { core.style.display = "none"; }
@@ -269,7 +272,7 @@ PQ_DAW.Track = class {
         volumeSlider.name = "volume";
         volumeSlider.min = -100
         volumeSlider.max = 0
-        volumeSlider.title = PQ_DAW.DOM.getTitleForShortcut("tracks", { name: "volume"});
+        volumeSlider.title = Shortcuts.getTitleFor("tracks", { name: "volume"});
         volumeDisplay.appendChild(volumeSlider)
 
         if(!this.createNodes) { volume.innerHTML = ""; }
@@ -355,7 +358,7 @@ PQ_DAW.Track = class {
     addPart(params)
     {
         params.parent = this;
-        const newPart = new PQ_DAW.Part(params);
+        const newPart = new Part(params);
 
         if(params.dataset) { newPart.setDataFrom(params.dataset); } // immediately sets custom part parameters
         if(params.recalculate) { newPart.calculateCorrectTimeParams(); }
@@ -363,16 +366,15 @@ PQ_DAW.Track = class {
         this.parts.push(newPart);
         
         if(newPart.getOutputNode()) { newPart.getOutputNode().connect(this.analyserNode); }
-        if(params.redraw) { PQ_DAW.DISPLAY.visualizeTrack(this.daw, this, true); }
+        if(params.redraw) { DISPLAY.visualizeTrack(this.daw, this, true); }
         
         return newPart;
     }
 
     showHideControls()
     {
-        const dom = PQ_DAW.DOM;
-        let showList = dom.getProperty(this.node, "show").split(",");
-        const hideList = dom.getProperty(this.node, "hide").split(",");
+        let showList = DOM.getProperty(this.node, "show").split(",");
+        const hideList = DOM.getProperty(this.node, "hide").split(",");
         const showAll = (showList.length <= 0 || showList[0] == "");
 
         // build one list with all interface elements
@@ -408,17 +410,17 @@ PQ_DAW.Track = class {
     setNameFromDOM(node)
     {
         const name = node.innerHTML;
-        PQ_DAW.DOM.setProperty(this.node, "id", name);
+        DOM.setProperty(this.node, "id", name);
     }
 
     getName()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "id");
+        return DOM.getProperty(this.node, "id");
     }
 
     setName(name)
     {
-        PQ_DAW.DOM.setProperty(this.node, "id", name);
+        DOM.setProperty(this.node, "id", name);
         this.trackName.innerHTML = name;
     }
 
@@ -463,7 +465,7 @@ PQ_DAW.Track = class {
 
     isBypassed()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "bypass") == "true";
+        return DOM.getProperty(this.node, "bypass") == "true";
     }
 
     getAutomationValueAt(time)
@@ -473,7 +475,7 @@ PQ_DAW.Track = class {
 
     getType()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "type");
+        return DOM.getProperty(this.node, "type");
     }
 
     isType(tp)
@@ -527,7 +529,7 @@ PQ_DAW.Track = class {
             return;
         }
 
-        const effectKeys = PQ_DAW.DOM.getProperty(this.node, "effects").split(",");
+        const effectKeys = DOM.getProperty(this.node, "effects").split(",");
         for(const key of effectKeys)
         {
             const keyClean = key.trim();
@@ -572,13 +574,13 @@ PQ_DAW.Track = class {
 
     getOutPath()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "out");
+        return DOM.getProperty(this.node, "out");
     }
 
     setOutFromDOM(node)
     {
         const value = node.innerHTML;
-        PQ_DAW.DOM.setProperty(this.node, "out", value);
+        DOM.setProperty(this.node, "out", value);
     }
 
     generateName()
@@ -588,12 +590,12 @@ PQ_DAW.Track = class {
 
     isMaster()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "master") == "true";
+        return DOM.getProperty(this.node, "master") == "true";
     }
 
     setMaster()
     {
-        PQ_DAW.DOM.setProperty(this.node, "master", true);
+        DOM.setProperty(this.node, "master", true);
         this.setName("master");
         this.setVisible(false);
     }
@@ -644,7 +646,7 @@ PQ_DAW.Track = class {
         if(!this.volumeNode) { return; }
 
         const sliderValue = parseFloat(this.sliders["volume"].value)
-        PQ_DAW.DOM.setProperty(this.node, "volume", sliderValue);
+        DOM.setProperty(this.node, "volume", sliderValue);
         const dynamicGain = (sliderValue + 100) / 100.0; 
         let finalGain = dynamicGain;
 
@@ -660,35 +662,35 @@ PQ_DAW.Track = class {
 
     isMuted()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "mute") == "true"
+        return DOM.getProperty(this.node, "mute") == "true"
     }
 
     isSolo()
     {
         if(this.isMaster()) { return true; }
-        return PQ_DAW.DOM.getProperty(this.node, "solo") == "true";
+        return DOM.getProperty(this.node, "solo") == "true";
     }
 
     isPhaseInverted()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "phase") == "true";
+        return DOM.getProperty(this.node, "phase") == "true";
     }
 
     isVisible()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "visible") == "true";
+        return DOM.getProperty(this.node, "visible") == "true";
     }
 
     setVisible(val)
     {
-        PQ_DAW.DOM.setProperty(this.node, "visible", val);
+        DOM.setProperty(this.node, "visible", val);
         if(val) { this.node.style.display = "flex";}
         else { this.node.style.display = "none"; }
     }
 
     isRecordEnabled()
     {
-        return PQ_DAW.DOM.getProperty(this.node, "record") == "true";   
+        return DOM.getProperty(this.node, "record") == "true";   
     }
 
     hasActiveRecording()
@@ -698,7 +700,7 @@ PQ_DAW.Track = class {
 
     async startRecording(startTime = 0)
     {
-        this.recorder = new PQ_DAW.Recorder();
+        this.recorder = new Recorder();
         await this.recorder.start(startTime);
     }
 
@@ -720,7 +722,7 @@ PQ_DAW.Track = class {
     {
         if(!this.panNode) { return; }
         const sliderValue = parseFloat(this.sliders["pan"].value);
-        PQ_DAW.DOM.setProperty(this.node, "pan", sliderValue);
+        DOM.setProperty(this.node, "pan", sliderValue);
         const newPan = sliderValue / 100.0;
         const startTime = this.daw.getContext().currentTime;
         const duration = 0.01;
@@ -777,15 +779,9 @@ PQ_DAW.Track = class {
         return arr;
     }
 
-    getParts()
+    removePart(part)
     {
-        return this.parts;
-    }
-
-    removePart(params)
-    {
-        let idx = this.parts.length - 1;
-        if(params.part) { idx = this.parts.indexOf(params.part); }
+        const idx = this.parts.indexOf(part);
         if(idx < 0) { console.error("Tried to remove non-existing part!"); return; }
         this.parts[idx].remove();
         this.parts.splice(idx, 1);
@@ -805,7 +801,7 @@ PQ_DAW.Track = class {
         
         for(let i = this.parts.length - 1; i >= 0; i--)
         {
-            this.removePart({ part: this.parts[i] });
+            this.removePart(this.parts[i]);
         }
     }
 
@@ -855,7 +851,7 @@ PQ_DAW.Track = class {
         const btn = document.createElement("button");
         btn.classList.add("effect", type, "icon", "icon-" + type);
         btn.name = "effect-" + type;
-        btn.title = PQ_DAW.DOM.getTitleForShortcut("tracks", { name: type });
+        btn.title = Shortcuts.getTitleFor("tracks", { name: type });
         btn.dataset.name = type;
         this.effectLabelsContainer.appendChild(btn);
         
@@ -863,22 +859,20 @@ PQ_DAW.Track = class {
         params.parent = this;
 
         // add the actual plugin
-        const effect = new PQ_DAW.Plugin(params);
+        const effect = new Plugin(params);
         this.injectEffectIntoAudioChain(effect);
         this.effects.push(effect);
 
-        PQ_DAW.DOM.connectPluginButton(btn, this, effect)
+        DOM.connectPluginButton(btn, this, effect)
 
         return effect;
     }
 
-    removeEffect(params)
+    removeEffect(effect)
     {
-        let idx = this.effects.length - 1;
-        if(params.effect) { idx = this.effects.indexOf(params.effect); }
-        if(idx < 0) { return; }
+        const idx = this.effects.indexOf(effect);
+        if(idx == -1) { return; }
 
-        let effect = this.effects[idx];
         this.extractEffectFromAudioChain(effect);
 
         effect.remove();
@@ -887,7 +881,8 @@ PQ_DAW.Track = class {
 
     removeLastEffect()
     {
-        this.removeEffect();
+        if(this.effects.length <= 0) { return; }
+        this.removeEffect(this.effects[this.effects.length - 1]);
     }
 
     getEffects()

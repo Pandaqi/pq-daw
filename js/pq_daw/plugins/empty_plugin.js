@@ -1,4 +1,4 @@
-PQ_DAW.PLUGIN_LIST["NAME"] = class {
+export default class SomePlugin {
     constructor(plugin)
     {
         this.plugin = plugin;
