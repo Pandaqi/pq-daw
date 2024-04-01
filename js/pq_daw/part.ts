@@ -3,24 +3,61 @@ import DISPLAY from "./display"
 import DOM from "./dom"
 import Dragger from "./dom/dragger"
 import Drawable from "./dom/drawable"
+import Track from "./track"
+
+const DEFAULTS = {
+    source: "",
+    type: "audio",
+    start: 0,
+    end: "",
+    duration: "",
+    totalduration: "",
+    offset: 0,
+    fadestart: 0.05,
+    fadeend: 0.05
+};
+
+interface PartParams
+{
+    node?: HTMLElement,
+    automation: boolean
+    parent?: Track,
+}
+
+type Bounds = { min: number, max: number }
+
 
 // represents one part; the actual atomic element of sound
-export default class Part {
-    constructor(params)
+export default class Part 
+{
+    track: Track
+    node: HTMLDivElement
+    canvas: HTMLCanvasElement
+    canvasDrawable: Drawable
+    sound: AudioBufferSourceNode
+    playing: boolean
+    receiveDOMevents: boolean
+    dontVisualize: boolean
+    createNodes: boolean
+    gainNode: GainNode
+    allowFades: boolean
+    fadeStartNode: HTMLDivElement
+    fadeEndNode: HTMLDivElement
+    allowDrag: boolean
+    minWidth: number
+    edgeDragMargin: number
+    moveDragger: Dragger
+    startNode: HTMLDivElement
+    startDragger: Dragger
+    endNode: HTMLDivElement
+    endDragger: Dragger
+    drawOnCanvas: boolean
+    fullLength: boolean
+    allowPlaying: boolean
+
+    constructor(params:PartParams)
     {
         this.track = params.parent;
-        this.defaults = {
-            source: "",
-            type: "audio",
-            start: 0,
-            end: "",
-            duration: "",
-            totalduration: "",
-            offset: 0,
-            fadestart: 0.05,
-            fadeend: 0.05
-        };
-
         this.node = this.setupHTML(params);
 
         this.canvas = this.node.getElementsByTagName("canvas")[0];
@@ -53,12 +90,12 @@ export default class Part {
     convertToAutomationPoint()
     {
         this.dontVisualize = true;
-        for(const key of Object.keys(this.defaults))
+        for(const key of Object.keys(DEFAULTS))
         {
             if(key == "source" || key == "start") { continue; }
             this.node.removeAttribute("data-" + key);
         }
-        this.node.style = "display: none;";
+        this.node.style.display = "none"; // @TODO: I completely overwrote style before instead of only changing display, so is this still correct now?
         this.canvas.remove();
     }
 
@@ -74,12 +111,12 @@ export default class Part {
         if(!this.allowFades) { return; }
         this.fadeStartNode = document.createElement("div");
         this.fadeStartNode.classList.add("part-fade-visual");
-        this.fadeStartNode.left = "0px";
+        this.fadeStartNode.style.left = "0px";
         this.node.appendChild(this.fadeStartNode);
 
         this.fadeEndNode = document.createElement("div");
         this.fadeEndNode.classList.add("part-fade-visual");
-        this.fadeEndNode.right = "0px";
+        this.fadeEndNode.style.right = "0px";
         this.node.appendChild(this.fadeEndNode);
     }
 
@@ -140,7 +177,7 @@ export default class Part {
         }
     }
 
-    makeCanvasDrawable(params)
+    makeCanvasDrawable(params:PartParams)
     {
         if(!this.drawOnCanvas) { return; }
 
@@ -152,13 +189,13 @@ export default class Part {
         }
     }
 
-    setupHTML(params)
+    setupHTML(params:PartParams)
     {
         const node = params.node || { dataset: {} };
-        for(const key in this.defaults)
+        for(const key in DEFAULTS)
         {
             if(key in node.dataset) { continue; }
-            node.dataset[key] = this.defaults[key];
+            node.dataset[key] = DEFAULTS[key];
         }
 
         // parts are simple: just a container and a canvas
@@ -170,7 +207,7 @@ export default class Part {
             DOM.setProperty(main, key, node.dataset[key]);
         }
         
-        this.changeSetupBasedOnPartType(main, params);
+        this.changeSetupBasedOnPartType(main);
 
         const canvas = document.createElement("canvas");
         canvas.width = 0;
@@ -183,7 +220,7 @@ export default class Part {
         return main
     }
 
-    changeSetupBasedOnPartType(node, params)
+    changeSetupBasedOnPartType(node:HTMLElement)
     {
         this.fullLength = false;
         this.allowDrag = true;
@@ -218,7 +255,7 @@ export default class Part {
         return this.track.daw;
     }
 
-    setWidth(px)
+    setWidth(px:number)
     {
         px = Math.min(Math.max(px, this.minWidth), this.track.getWidth() - this.getLeftPos());
         this.node.style.width = px + "px";
@@ -230,7 +267,7 @@ export default class Part {
         return this.node.getBoundingClientRect().width;
     }
 
-    setLeftPos(px)
+    setLeftPos(px:number)
     {
         let maxWidth = this.track.getWidth() - this.getWidth();
         if(maxWidth <= 0) { maxWidth = Infinity; }
@@ -244,12 +281,12 @@ export default class Part {
 
     getLeftPos()
     {
-        return this.node.getBoundingClientRect().left - this.node.parentNode.getBoundingClientRect().left;
+        return this.node.getBoundingClientRect().left - this.node.parentElement.getBoundingClientRect().left;
     }
 
     getRightPos()
     {
-        return this.node.getBoundingClientRect().right - this.node.parentNode.getBoundingClientRect().left;
+        return this.node.getBoundingClientRect().right - this.node.parentElement.getBoundingClientRect().left;
     }
 
     async calculateCorrectTimeParamsFromDOM(modifyOffset = false)
@@ -385,7 +422,7 @@ export default class Part {
         return this.playing;
     }
 
-    setPlaying(val, curTimeDAW = 0, startOffset = 0)
+    setPlaying(val:boolean, curTimeDAW = 0, startOffset = 0)
     {
         this.playing = val;
         if(!this.allowPlaying) { return; }
@@ -458,7 +495,7 @@ export default class Part {
         DISPLAY.visualizePart(this.getDaw(), this.track, this);
     }
 
-    getFadeValueAt(time = 0, bounds)
+    getFadeValueAt(time = 0, bounds:Bounds)
     {
         let start = bounds.min, end = bounds.max;
         let startTime = 0, endTime = this.getFadeStart();

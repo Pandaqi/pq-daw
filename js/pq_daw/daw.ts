@@ -4,17 +4,67 @@ import DOM from "./dom"
 import PLAYER from "./player"
 import Track from "./track"
 import Shortcuts from "./dom/shortcuts"
+import Color from "./color"
+
+const DEFAULTS = {
+    tempo: 120,
+    duration: 100,
+    caption: ""
+}
+
+interface DAWParams
+{
+    node?: HTMLElement,
+    parent?: HTMLElement,
+    offline?: boolean
+}
+
+interface TrackParams
+{
+    node?: HTMLElement,
+    parent?: Daw,
+    num?: number,
+    redraw?: boolean,
+    track?: Track
+}
+
+interface DAWConfig
+{
+    tempo?: number,
+    duration?: number,
+    trackHeight?: number,
+    trackWidth?: number,
+    cursorWidth?: number,
+    pixelsPerSecond?: number,
+    secondsPerBeat?: number,
+    colors?: Color[]
+}
 
 // represents one full daw interface, holds its tracks
-export default class Daw {
-    constructor(params = {})
+export default class Daw 
+{
+    node: HTMLElement
+    time: number
+    soloActive: boolean
+    startTime: number
+    startContextTime: number
+    loaded: boolean
+    playing: boolean
+    visualSeed: number
+    trackControlsSetup: Record<string, string>
+    controls: HTMLElement
+    tracksContainer: HTMLElement
+    tracks: Track[]
+    offline: boolean
+    contextOffline: OfflineAudioContext
+    context: AudioContext
+    metadataContainer: HTMLElement
+    config: DAWConfig
+
+    
+    constructor(params:DAWParams = {})
     {
         this.setupContexts(params);
-        this.defaults = {
-            tempo: 120,
-            duration: 100,
-            caption: ""
-        }
         this.node = this.setupHTML(params);
 
         this.setupTracks(params);
@@ -30,8 +80,8 @@ export default class Daw {
         this.trackControlsSetup = {}; // the dataset given through HTML about which controls a track should show
 
         const node = this.node;
-        this.controls = node.getElementsByClassName("daw-controls")[0];
-        this.tracksContainer = node.getElementsByClassName("daw-tracks")[0];
+        this.controls = node.getElementsByClassName("daw-controls")[0] as HTMLElement;
+        this.tracksContainer = node.getElementsByClassName("daw-tracks")[0] as HTMLElement;
 
         const playBtn = node.getElementsByClassName("play-btn")[0];
         playBtn.addEventListener("click", this.togglePlayPause.bind(this));
@@ -54,14 +104,14 @@ export default class Daw {
         else { parentContainer.appendChild(node); }
     }
 
-    setupHTML(params)
+    setupHTML(params:DAWParams)
     {
-        const node = params.node || { dataset: {} };
+        const node = params.node ?? { dataset: { caption: "" } };
 
-        for(const key in this.defaults)
+        for(const key in DEFAULTS)
         {
             if(key in node.dataset) { continue; }
-            node.dataset[key] = this.defaults[key];
+            node.dataset[key] = DEFAULTS[key];
         }
 
         // main <figure> element containing the DAW
@@ -121,14 +171,14 @@ export default class Daw {
         return main;
     }
 
-    setupTracks(params)
+    setupTracks(params:DAWParams)
     {
         this.tracks = [];
 
         if(!this.hasMasterTrack(params.node))
         {
             const masterTrack = this.addTrack();
-            masterTrack.setMaster(true);
+            masterTrack.makeMaster();
         }
 
         this.generateConfig();
@@ -136,7 +186,7 @@ export default class Daw {
         // @NOTE: if no existing HTML given, stop here (no more tracks to add)
         if(!params.node) { return; }
         
-        const trackNodes = params.node.getElementsByClassName("pq-daw-track");
+        const trackNodes = Array.from(params.node.getElementsByClassName("pq-daw-track")) as HTMLElement[];
         for(const track of trackNodes)
         {
             this.addTrack({ node: track });
@@ -145,7 +195,7 @@ export default class Daw {
         this.generateConfig();
     }
 
-    addTrack(params = {})
+    addTrack(params:TrackParams = {})
     {
         params.parent = this;
         params.num = this.tracks.length;
@@ -156,7 +206,7 @@ export default class Daw {
         return newTrack;
     }
 
-    removeTrack(params = {})
+    removeTrack(params:TrackParams = {})
     {
         let index = this.tracks.length - 1;
         if(params.track) { index = this.tracks.indexOf(params.track); }
@@ -202,7 +252,7 @@ export default class Daw {
 
     setupContexts(params)
     {
-        this.offline = params.offline || false;
+        this.offline = params.offline ?? false;
 
         // @NOTE: only used for rendering the full song; doesn't need visibilitychange for it's never visible
         if(this.isOffline())
@@ -214,7 +264,8 @@ export default class Daw {
             return;
         }
 
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        // @ts-ignore
+        const AudioContext = window.AudioContext ?? window.webkitAudioContext;
         this.context = new AudioContext();
 
         document.addEventListener("visibilitychange", event => {
@@ -225,7 +276,7 @@ export default class Daw {
 
     updateMetadata()
     {
-        this.metadataContainer = this.node.getElementsByClassName("daw-metadata")[0];
+        this.metadataContainer = this.node.getElementsByClassName("daw-metadata")[0] as HTMLElement;
 
         const tempo = this.metadataContainer.getElementsByClassName("tempo-metadata")[0];
         tempo.innerHTML = "Tempo = " + DOM.getProperty(this.node, "tempo") + " BPM";
@@ -302,7 +353,7 @@ export default class Daw {
         await PLAYER.play(this);
     }
     
-    async requestRestartForCallback(callback)
+    async requestRestartForCallback(callback:Function)
     {
         const isPlaying = this.isPlaying();
         if(isPlaying) { await PLAYER.stop(this); }
@@ -330,13 +381,13 @@ export default class Daw {
         return maxLength;
     }
 
-    getTimeInPixels(time)
+    getTimeInPixels(time:number)
     {
         const timeClamped = Math.max(Math.min(time, this.config.duration), 0);
         return this.getPixelsPerSecond()*timeClamped;
     }
 
-    getPixelsInTime(px)
+    getPixelsInTime(px:number)
     {
         const pixelsClamped = Math.max(Math.min(px, this.config.trackWidth), 0);
         return pixelsClamped / this.getPixelsPerSecond();
@@ -346,7 +397,7 @@ export default class Daw {
     {
         const that = this;
         window.addEventListener("resize", (ev) => {
-            setTimeout(that.visualize(true), 300);
+            setTimeout(() => that.visualize(true), 300);
         });
     }
 
@@ -375,7 +426,7 @@ export default class Daw {
 
     generateConfig()
     {
-        const noDurationSet = !this.getDuration() || (this.getDuration() == this.defaults.duration);
+        const noDurationSet = !this.getDuration() || (this.getDuration() == DEFAULTS.duration);
         if(noDurationSet)
         {
             const totalDuration = this.getTotalDurationFromTracks();
@@ -411,11 +462,11 @@ export default class Daw {
         await PLAYER.stop(this, true);
     }
 
-    hasMasterTrack(cont)
+    hasMasterTrack(cont:HTMLElement)
     {
         if(!cont) { return false; }
         
-        const list = cont.getElementsByClassName("pq-daw-track");
+        const list = Array.from(cont.getElementsByClassName("pq-daw-track")) as HTMLElement[];
         for(const node of list)
         {
             if(node.dataset.id == "master") { return true; }
@@ -432,7 +483,7 @@ export default class Daw {
         return null;
     }
 
-    getControlFromPathString(path)
+    getControlFromPathString(path:string)
     {
         const pathParts = path.split("/");
         if(pathParts.length <= 0) { return null; }
@@ -445,7 +496,7 @@ export default class Daw {
         return track.getControlFromPathString(path);
     }
 
-    setTime(t)
+    setTime(t:number)
     {
         const timeClamped = Math.max(Math.min(t, this.config.duration), 0);
         this.time = timeClamped;
@@ -457,12 +508,12 @@ export default class Daw {
         return this.time;
     }
 
-    getTimeFromPercentage(perc)
+    getTimeFromPercentage(perc:number)
     {
         return perc * this.config.duration;
     }
 
-    advanceTime(dt)
+    advanceTime(dt:number)
     {
         this.setTime(this.time + dt);
     }
@@ -477,7 +528,7 @@ export default class Daw {
         return this.playing;
     }
 
-    setDuration(d)
+    setDuration(d:number)
     {
         DOM.setProperty(this.node, "duration", d);
     }

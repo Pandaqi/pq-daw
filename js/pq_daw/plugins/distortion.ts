@@ -1,21 +1,24 @@
 import DOM from "../dom"
+import PluginTemplate from "./pluginTemplate";
 
-export default class Distortion {
+export default class Distortion extends PluginTemplate
+{
+    defaults = {
+        wet: 0.5,
+        oversample: 0,
+        gain: 0
+    }
+    
+    desc = "Distorts the signal. Usually way louder. Draw your own curve and listen to the results."
+
     constructor(plugin)
     {
-        this.plugin = plugin;
-        this.audioNodes = {};
-        this.defaults = {
-            wet: 0.5,
-            oversample: 0,
-            gain: 0
-        }
-        
-        this.desc = "Distorts the signal. Usually way louder. Draw your own curve and listen to the results."
+        super(plugin);
     }
 
     // @SOURCE: https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/createWaveShaper#example
-    makeDistortionCurve(amount = 20) {
+    makeDistortionCurve(amount = 20) 
+    {
         let n_samples = 256, curve = new Float32Array(n_samples);
         for (let i = 0 ; i < n_samples; ++i ) {
             let x = i * 2 / n_samples - 1;
@@ -40,8 +43,8 @@ export default class Distortion {
 
     createHTML(cont, defaults)
     {
-        const an = this.audioNodes.distortion;
-        const gain = this.audioNodes.gain;
+        const an = this.audioNodes.distortion as WaveShaperNode;
+        const gain = this.audioNodes.gain as GainNode;
         const node = this.plugin.node
 
         this.plugin.createDryWetControl(cont, defaults.wet);
@@ -50,7 +53,7 @@ export default class Distortion {
             cont: cont, min: 0, max: 4, value: defaults.oversample, step: 2,
             name: "oversample", text: "Oversample", unit: "none", callback: (val) => { 
                 if(val == 0) { an.oversample = 'none'; }
-                else { an.oversample = val + "x"; } 
+                else { an.oversample = (val + "x") as OverSampleType; } 
             }
         })
 

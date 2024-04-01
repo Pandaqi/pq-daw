@@ -1,21 +1,31 @@
 import AUDIO from "../audio"
-import DOM from "../dom"
+import DOM, { DOMParams } from "../dom"
 
-export default class Slider {
-    constructor(owner, nodes, params)
+const DEFAULTS = { 
+    audioParams: [], 
+    unit: "percentage", 
+    callback: null, 
+    autoConnect: false
+};
+
+export default class Slider 
+{
+    owner: any;
+    nodes: any;
+    params: DOMParams;
+
+    constructor(owner:any, nodes, params:DOMParams)
     {
         this.owner = owner;
         this.nodes = nodes;
         this.params = params;
 
-        const defaultParams = { audioParams: [], unit: "percentage", callback: null, autoConnect: false };
-        for(const key in defaultParams)
+        for(const [key,data] of Object.entries(DEFAULTS))
         {
             if(key in this.params) { continue; }
-            this.params[key] = defaultParams[key];
+            this.params[key] = data;
         }
 
-        if(!Array.isArray(this.params.audioParams)) { this.params.audioParams = [this.params.audioParams]; }
         this.createAutoConnection();
     }
 
@@ -28,7 +38,7 @@ export default class Slider {
     {
         if(!this.needsAutoConnection()) { return; }
 
-        this.connectSlider(this.nodes.slider, this, () => {
+        DOM.connectSlider(this.nodes.slider, this, () => {
             const name = this.nodes.slider.name;
 
             let val = this.getValueAsFloat();
@@ -37,9 +47,9 @@ export default class Slider {
 
             DOM.setProperty(this.owner, name, val);
 
-            for(const param of this.params.audioParams)
+            if(this.params.audioParams)
             {
-                param.setTargetAtTime(val, null, 0.03);
+                this.params.audioParams.setTargetAtTime(val, null, 0.03);
             }
 
             if(this.params.callback)
@@ -66,7 +76,7 @@ export default class Slider {
         return AUDIO.decibelsToGain(this.getValueAsFloat());
     }
 
-    setDisplay(val, unit = this.params.unit)
+    setDisplay(val:any, unit = this.params.unit)
     {
         let string = "";
         if(unit == "percentage") { string = Math.round(val * 100) + "%"; }

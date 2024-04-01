@@ -8,6 +8,8 @@ import Equalizer from "./plugins/equalizer"
 import Distortion from "./plugins/distortion"
 import Delay from "./plugins/delay"
 import Compressor from "./plugins/compressor"
+import Track from "./track"
+import PluginTemplate from "./plugins/pluginTemplate"
 
 
 // @TODO: allow user to extend this from the outside?
@@ -21,9 +23,32 @@ const PLUGIN_LIST = {
     compressor: Compressor
 };
 
+interface PluginParams
+{
+    parent?: Track,
+    type?: string,
+    button?: HTMLButtonElement,
+    existingHTML?: HTMLElement,
+}
+
 // handles the visual and data for one plugin (of given type)
-export default class Plugin {
-    constructor(params)
+export default class Plugin 
+{
+    track: Track
+    type: string
+    button: HTMLButtonElement
+    visible: boolean
+    existingHTML: HTMLElement
+    constant: boolean
+    oldWetValue: number
+    node: HTMLElement
+    plugin: PluginTemplate
+    inputNode: AudioNode
+    outputNode: AudioNode
+    dryGain: GainNode
+    wetGain: GainNode
+
+    constructor(params:PluginParams = {})
     {
         this.track = params.parent;
         this.type = params.type;
@@ -52,18 +77,17 @@ export default class Plugin {
 
         this.createCustomHTML();
 
-        const startOpen = this.track.dataset.show.includes(this.type);
+        const startOpen = this.track.node.dataset.show.includes(this.type);
         if(startOpen) { DOM.fakeClickButton(this.button); }
     }
 
-    setConstant(val)
+    setConstant(val:boolean)
     {
         this.constant = val;
     }
 
-    setPlaying(val)
+    setPlaying(val:boolean)
     {
-        if(typeof this.plugin.setPlaying !== "function") { return; }
         this.plugin.setPlaying(val);
     }
 
@@ -87,7 +111,7 @@ export default class Plugin {
         return this.visible;
     }
 
-    setVisible(val)
+    setVisible(val:boolean)
     {
         this.visible = val;
         if(val) { this.node.style.display = "block"; }
@@ -123,13 +147,13 @@ export default class Plugin {
     }
 
     // we always add effects to the wet side (by now, this is just one channel)
-    attachToFirstInput(node)
+    attachToFirstInput(node:AudioNode)
     {
         this.wetGain.connect(node);
     }
 
     // first channel is dry signal, so we connect to second channel ( = 1)
-    attachToFinalOutput(node)
+    attachToFinalOutput(node:AudioNode)
     {
         node.connect(this.outputNode);
         //node.connect(this.outputNode, 0, 1);
@@ -227,7 +251,7 @@ export default class Plugin {
         }
     }
 
-    createDryWetControl(cont, defValue = 0.5)
+    createDryWetControl(cont:HTMLElement, defValue = 0.5)
     {
         DOM.createSlider(this.node, { 
             cont: cont, min: 0, max: 1, value: defValue, step: 0.01, 
@@ -236,19 +260,19 @@ export default class Plugin {
         });
     }
 
-    createMakeUpGainControl(cont, audioParam, defValue = 0.0, bounds = { min: -20, max: 20 })
+    createMakeUpGainControl(cont:HTMLElement, audioParams:AudioParam, defValue = 0.0, bounds = { min: -20, max: 20 })
     {
         const step = (bounds.max - bounds.min) / 128.0;
         DOM.createSlider(this.node, {
             cont: cont, min: bounds.min, max: bounds.max, value: defValue, step: step,
-            name: "gain", text: "Gain", unit: "gain", audioParams: audioParam
+            name: "gain", text: "Gain", unit: "gain", audioParams: audioParams
         })
     }
 
     // @SOURCE: https://www.oreilly.com/library/view/web-audio-api/9781449332679/ch03.html
     // @SOURCE: https://webaudioapi.com/book/Web_Audio_API_Boris_Smus_html/ch06.html
     // This uses an "equal power crossfade" to keep volume rougly the same
-    setWet(wetness)
+    setWet(wetness:number)
     {
         var dryGain = Math.cos(wetness * 0.5*Math.PI);
         var wetGain = Math.cos((1.0 - wetness) * 0.5*Math.PI);
@@ -279,11 +303,12 @@ export default class Plugin {
 
         for(const key in defaults)
         {
-            let knownValue = DOM.getProperty(node, key);
+            let knownValue:(number|string) = DOM.getProperty(node, key);
             if(!knownValue) { continue; }
 
             // some units convert between slider value and real value; so convert back if we encounter those
-            let unitType = node.querySelectorAll("*[name='" + key + "']")[0].dataset.unit;
+            const relatedNode = node.querySelectorAll("*[name='" + key + "']")[0] as HTMLElement;
+            let unitType = relatedNode.dataset.unit;
             if(unitType == "gain") { knownValue = AUDIO.gainToDecibels(parseFloat(knownValue)); }
 
             defaults[key] = knownValue;
@@ -294,7 +319,7 @@ export default class Plugin {
     remove()
     {
         if(this.button) { this.button.remove(); }
-        if(typeof this.plugin.remove === "function") { this.plugin.remove(); }
+        this.plugin.remove();
         this.node.remove();
     }
 }

@@ -1,7 +1,16 @@
 import Part from "../part"
 import Track from "../track"
 
-export default {
+interface ShortcutData
+{
+    type: string,
+    name: string,
+    value?: number,
+    shift?: boolean
+}
+
+export default 
+{
     
     shortcuts: {
 
@@ -40,7 +49,9 @@ export default {
         const matches = [];
         const name = params.name || "";
         let useShift = false;
-        for(const [key, value] of Object.entries(this.shortcuts[focusNode]))
+
+        const shortcutData : ShortcutData = this.shortcuts[focusNode];
+        for(const [key, value] of Object.entries(shortcutData))
         {
             if(!this.allPropertiesMatch(value, params)) { continue; }
             matches.push(key.toUpperCase());
@@ -56,7 +67,7 @@ export default {
         return string;
     },
 
-    executeShortcut(nodes, data)
+    executeShortcut(nodes, data:ShortcutData)
     {
         if(data.type == "button")
         {
@@ -100,7 +111,6 @@ export default {
             const isTrack = this.isType(node, Track);
             const isPart = this.isType(node, Part);
             const isTextInput = this.isType(node, HTMLElement) && node.hasAttribute("contenteditable");
-
 
             let daw = null;
             let track = null;
@@ -158,7 +168,7 @@ export default {
 
     },
 
-    allPropertiesMatch(obj1, obj2)
+    allPropertiesMatch(obj1:Record<string,any>, obj2:Record<string,any>)
     {
         for(const key in obj2)
         {

@@ -1,26 +1,48 @@
 import AUDIO from "../audio"
 import DOM from "../dom"
+import PluginTemplate from "./pluginTemplate";
 
-export default class Compressor {
+interface CompressorVisualConfig
+{
+    widthScale: number,
+    heightScale: number,
+    numGridLines: number,
+    numCurvePoints: number,
+    minGain: number,
+    maxGain: number,
+    edgeMargin: number,
+    fontSize: number,
+    volumeDotRadius: number,
+    actualWidth?: number,
+    actualHeight?: number,
+    oX?: number,
+    oY?: number
+}
+
+type Point = { x: number, y: number };
+
+export default class Compressor extends PluginTemplate
+{
+    defaults = {
+        threshold: -3,
+        knee: 3,
+        ratio: 2,
+        attack: 0.05,
+        release: 0.05,
+        gain: 0
+    }
+    
+    minGain = 0.001;
+    maxGain = 1.0;
+    graphStyle = "linear";
+    prevVolumeDot = { x: 0.5, y: 0.5 };
+    canvas:HTMLCanvasElement
+
+    desc = "To compress more, lower threshold and raise ratio. Won't change much if the source already has low dynamic range.";
+
     constructor(plugin)
     {
-        this.plugin = plugin;
-        this.audioNodes = {};
-        this.defaults = {
-            threshold: -3,
-            knee: 3,
-            ratio: 2,
-            attack: 0.05,
-            release: 0.05,
-            gain: 0
-        }
-
-        this.minGain = 0.001;
-        this.maxGain = 1.0;
-        this.graphStyle = "linear";
-        this.prevVolumeDot = { x: 0.5, y: 0.5 };
-
-        this.desc = "To compress more, lower threshold and raise ratio. Won't change much if the source already has low dynamic range.";
+        super(plugin);
     }
 
     createNodes()
@@ -43,8 +65,8 @@ export default class Compressor {
 
     createHTML(cont, defaults)
     {
-        const an = this.audioNodes.compressor;
-        const gain = this.audioNodes.gain;
+        const an = this.audioNodes.compressor as DynamicsCompressorNode;
+        const gain = this.audioNodes.gain as GainNode;
         const node = this.plugin.node
 
         const canv = document.createElement("canvas");
@@ -93,7 +115,7 @@ export default class Compressor {
         this.canvas.width = this.canvas.parentElement.offsetWidth;
         this.canvas.height = 0.5*this.canvas.width;
 
-        const visualConfig = {
+        const visualConfig : CompressorVisualConfig = {
             widthScale: 0.66,
             heightScale: 1.0,
             numGridLines: 13,
@@ -119,7 +141,7 @@ export default class Compressor {
         this.visualizeVolume(visualConfig, curve);
     }
 
-    visualizeGrid(cfg)
+    visualizeGrid(cfg:CompressorVisualConfig)
     {
         const w = cfg.actualWidth;
         const h = cfg.actualHeight;
@@ -205,7 +227,7 @@ export default class Compressor {
         }
     }
 
-    visualizeCompressionCurve(cfg)
+    visualizeCompressionCurve(cfg:CompressorVisualConfig)
     {
         const getProp = DOM.getProperty;
         const node = this.plugin.node;
@@ -304,12 +326,12 @@ export default class Compressor {
         return line;
     }
 
-    visualizeVolume(cfg, curve)
+    visualizeVolume(cfg:CompressorVisualConfig, curve:Point[])
     {
         const ctx = this.canvas.getContext("2d");
 
         // reduction meter (rectangle coming from above, read from audio node)
-        const volReduction = this.audioNodes.compressor.reduction;
+        const volReduction = (this.audioNodes.compressor as DynamicsCompressorNode).reduction;
         const fullReduction = AUDIO.gainToDecibels(cfg.minGain);
 
         const reducMargin = 40;

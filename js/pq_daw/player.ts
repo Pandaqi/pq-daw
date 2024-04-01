@@ -4,7 +4,8 @@ import Daw from "./daw"
 
 // responsible for playing/updating daws
 // (I'm experimenting with a very functional---instead of OOP---coding style here)
-export default {
+export default 
+{
     init()
     {
         this.daws = [];
@@ -12,7 +13,7 @@ export default {
         this.update();
     },
 
-    async render(daw, playback = false)
+    async render(daw:Daw, playback = false)
     {  
         const dawCopy = this.playOffline(daw);
         const loop = this.automateOffline(dawCopy);
@@ -33,7 +34,7 @@ export default {
         this.downloadRender(blobURL);
     },
 
-    downloadRender(blobURL)
+    downloadRender(blobURL:string)
     {
         var a = document.createElement("a");
         a.style.display = "none";
@@ -43,7 +44,7 @@ export default {
         a.click();
     },
 
-    automateOffline(daw)
+    automateOffline(daw:Daw)
     {
         return setInterval(() => {
             daw.setTime(daw.getContext().currentTime);
@@ -51,7 +52,7 @@ export default {
         }, this.offlineAutomateMargin);
     },
 
-    playOffline(daw)
+    playOffline(daw:Daw)
     {
         const dawCopy = new Daw({ node: daw.node, offline: true }); // second parameter = "offline DAW"
         const allParts = dawCopy.getAllParts();
@@ -73,7 +74,7 @@ export default {
         }
     },
 
-    updateDAW(daw)
+    updateDAW(daw:Daw)
     {
         daw.syncTimeWithContext();
 
@@ -92,7 +93,7 @@ export default {
         }
     },
 
-    async play(daw)
+    async play(daw:Daw)
     {
         daw.readTimeFromContext();
 
@@ -122,7 +123,7 @@ export default {
         this.daws.push(daw);
     },
 
-    async stop(daw, reset = false)
+    async stop(daw:Daw, reset = false)
     {
         this.daws.splice(this.daws.indexOf(daw), 1);
 
@@ -151,7 +152,7 @@ export default {
         }
     },
 
-    readFromAutomation(daw)
+    readFromAutomation(daw:Daw)
     {
         const time = daw.getTime();
 

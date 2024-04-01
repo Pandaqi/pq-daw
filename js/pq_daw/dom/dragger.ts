@@ -1,5 +1,11 @@
-export default class Dragger {
-    constructor(node)
+export default class Dragger 
+{
+    node: HTMLElement;
+    dragging: boolean;
+    lastDrag: { x: number; y: number; };
+    callback: Function;
+
+    constructor(node:HTMLElement)
     {
         this.node = node;
         this.dragging = false;

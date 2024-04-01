@@ -1,8 +1,12 @@
 import AUDIO from "./audio"
 import Color from "./color"
+import Daw from "./daw";
+import Part from "./part";
+import Track from "./track";
 
-export default {
-    generateColors(seed, num)
+export default 
+{
+    generateColors(seed:number, num:number)
     {
         const arr = [];
         const start = seed * 360;
@@ -15,7 +19,7 @@ export default {
         return arr;
     },
 
-    visualizeDaw(daw, redrawParts = false)
+    visualizeDaw(daw:Daw, redrawParts = false)
     {
         if(!daw.isLoaded()) { console.error("Can't visualize DAW that's not fully loaded"); return; }
 
@@ -28,7 +32,7 @@ export default {
         daw.updateMetadata();
     },
 
-    visualizeTrack(daw, track, redrawParts = true)
+    visualizeTrack(daw:Daw, track:Track, redrawParts = true)
     {
         if(!track.isVisible()) { return; }
 
@@ -51,7 +55,7 @@ export default {
         }
     },
 
-    visualizeTimeGrid(daw, track)
+    visualizeTimeGrid(daw:Daw, track:Track)
     {
         const canv = track.timeGridCanvas;
         canv.width = daw.config.trackWidth;
@@ -84,13 +88,13 @@ export default {
         }
     },
 
-    visualizeCursor(daw, track)
+    visualizeCursor(daw:Daw, track:Track)
     {
         track.cursor.style.width = daw.config.cursorWidth + "px";
         track.cursor.style.left = (daw.getPixelsPerSecond() * daw.getTime() - 0.5*daw.config.cursorWidth) + "px"; 
     },
 
-    visualizeVolume(daw, track)
+    visualizeVolume(daw:Daw, track:Track)
     {
         let newVolume = AUDIO.getVolumeAsGain(track.getAnalyser());
         if(newVolume == null) { return; }
@@ -99,7 +103,8 @@ export default {
         newVolume = 1.0 - (-AUDIO.gainToDecibels(newVolume) / maxTrackVolume);
         newVolume = Math.round(newVolume*100); // round and convert to percentage
 
-        const oldVolume = parseInt(track.volumeRect.style.height.replace("%", "") || 100);
+        const readPercentage = track.volumeRect.style.height.replace("%", "");
+        const oldVolume = parseInt(readPercentage ?? "100");
         let smoothedVolume = oldVolume + (newVolume - oldVolume)*0.1;
         smoothedVolume = Math.max(Math.min(smoothedVolume, 100), 0);
 
@@ -115,20 +120,20 @@ export default {
         track.volumeRect.style.backgroundColor = volumeColor.toString();
     },
 
-    positionPart(daw, track, part)
+    positionPart(daw:Daw, track:Track, part:Part)
     {
         const pixelPos = this.timeToPixels(daw, part.getStartTime(), false);
         part.setLeftPos(pixelPos);
     },
 
-    getColorForTrack(track)
+    getColorForTrack(track:Track) : Color
     {
         const config = track.daw.config;
-        if(!config) { return "#000000"; }
+        if(!config) { return new Color(0,0,0); }
         return config.colors[track.getNum()];
     },
 
-    visualizePart(daw, track, part)
+    visualizePart(daw:Daw, track:Track, part:Part)
     {
         if(part.dontVisualize) { return; }
 
@@ -139,7 +144,7 @@ export default {
         canv.height = daw.config.trackHeight - partMargin;
         canv.width = this.timeToPixels(daw, part.getDuration(), false);
 
-        const color = this.getColorForTrack(track);
+        const color : Color = this.getColorForTrack(track);
         part.node.style.backgroundColor = "rgba(255,255,255,0.3)";
         part.setWidth(canv.width);
 
@@ -159,18 +164,16 @@ export default {
         this.visualizePartFades(part, daw.config.pixelsPerSecond);
     },
 
-    visualizePartFades(part, secToPx)
+    visualizePartFades(part:Part, secToPx:number)
     {
         const fsWidth = part.getFadeStart() * secToPx;
         const feWidth = part.getFadeEnd() * secToPx;
 
         this.visualizeFadeLine(part.getCanvas(), fsWidth, "start");
         this.visualizeFadeLine(part.getCanvas(), feWidth, "end");
-
-
     },
 
-    visualizeFadeLine(canvas, fsWidth, type = "start")
+    visualizeFadeLine(canvas:HTMLCanvasElement, fsWidth : number, type = "start")
     {
         const ctx = canvas.getContext('2d');
 
@@ -201,21 +204,23 @@ export default {
         ctx.restore();
     },
 
-    timeToPixels(daw, time, units = true)
+    timeToPixels(daw:Daw, time:number, units = true)
     {
-        let px = daw.getTimeInPixels(time);
+        const rawTime = daw.getTimeInPixels(time);
+        let px = rawTime.toString();
         if(units) { px += "px"; }
         return px;
     },
 
-    pixelsToTime(daw, pixels, units = true)
+    pixelsToTime(daw:Daw, pixels:(string|number), units = true)
     {
-        if(units) { pixels = pixels.slice(0,-2); }
-        let time = daw.getPixelsInTime(pixels);
-        return time;
+        let rawTime:number;
+        if(units) { rawTime = parseFloat( (pixels as string).slice(0,-2) ); }
+        else { rawTime = pixels as number; }
+        return daw.getPixelsInTime(rawTime);
     },
     
-    visualizeOscillator(daw, part, color)
+    visualizeOscillator(daw:Daw, part:Part, color:Color)
     {
         const canvas = part.getCanvas();
         const ctx = canvas.getContext('2d');
@@ -236,12 +241,12 @@ export default {
         ctx.stroke();
     },
     
-    visualizeAutomation(daw, part, color)
+    visualizeAutomation(daw:Daw, part:Part, color:Color)
     {
         part.canvasDrawable.visualize(color);
     },
 
-    visualizeFullWaveform(daw, part, color)
+    visualizeFullWaveform(daw:Daw, part:Part, color:Color)
     {
         const canvas = part.getCanvas();
         const ctx = canvas.getContext('2d');

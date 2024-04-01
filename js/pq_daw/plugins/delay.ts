@@ -1,19 +1,22 @@
 import DOM from "../dom"
+import PluginTemplate from "./pluginTemplate";
 
-export default class Delay {
+export default class Delay extends PluginTemplate
+{
+    defaults = {
+        wet: 0.5,
+        feedback: 0.5,
+        delayTime: 0.03,
+        numRepetitions: 0,
+        pingPong: false
+    }
+
+    audioNodesCustom: { delay: DelayNode[], gain: GainNode[] }
+    desc = "Lower feedback = softer repetitions. If repetitions zero, repeats continue until inaudible."
+
     constructor(plugin)
     {
-        this.plugin = plugin;
-        this.audioNodes = {};
-        this.defaults = {
-            wet: 0.5,
-            feedback: 0.5,
-            delayTime: 0.03,
-            numRepetitions: 0,
-            pingPong: false
-        }
-
-        this.desc = "Lower feedback = softer repetitions. If repetitions zero, repeats continue until inaudible."
+        super(plugin);
     }
 
     createNodes()
@@ -22,18 +25,17 @@ export default class Delay {
         const getProp = DOM.getProperty;
 
         // disconnect all existing outbound connections from us
-        this.audioNodes = { delay: [], gain: [], pan: [] }
+        this.audioNodesCustom = { delay: [], gain: [] }
 
         const ctx = this.plugin.getContext();
         const maxDelayTime = 10;
-        const delayTime = Math.min(getProp(node, "delayTime") || 1.0, maxDelayTime);
-        const feedback = getProp(node, "feedback") || 1.0;
-        const numRepetitions = getProp(node, "numRepetitions") || 0;
+        const delayTime = Math.min(parseFloat(getProp(node, "delayTime")) ?? 1.0, maxDelayTime);
+        const feedback = parseFloat(getProp(node, "feedback")) || 1.0;
+        const numRepetitions = parseFloat(getProp(node, "numRepetitions")) ?? 0;
         const useRepetitions = (numRepetitions > 0);
         const delayParams = { delayTime: delayTime, maxDelayTime: maxDelayTime };
-        let lastNode;
 
-        const pingPong = (getProp(node, "pingPong") == "true") || false; 
+        const pingPong = (getProp(node, "pingPong") == "true") ?? false; 
 
         // REPETITIONS
         // we create all the delays beforehand
@@ -48,7 +50,7 @@ export default class Delay {
             for(let i = 0; i < numRepetitions; i++)
             {
                 const delayNode = new DelayNode(ctx, delayParams);
-                this.audioNodes.delay.push(delayNode);
+                this.audioNodesCustom.delay.push(delayNode);
 
                 if(i == 0)
                 {
@@ -56,7 +58,7 @@ export default class Delay {
                 }
 
                 const gainNode = new GainNode(ctx, { gain: feedback })
-                this.audioNodes.gain.push(gainNode);
+                this.audioNodesCustom.gain.push(gainNode);
 
                 finalLastNode = gainNode;
 
@@ -93,11 +95,11 @@ export default class Delay {
         } else {
             const delayNodeL = new DelayNode(ctx, delayParams);
             const delayNodeR = new DelayNode(ctx, delayParams);
-            this.audioNodes.delay.push(delayNodeL);
-            this.audioNodes.delay.push(delayNodeR);
+            this.audioNodesCustom.delay.push(delayNodeL);
+            this.audioNodesCustom.delay.push(delayNodeR);
             
             const gainNode = new GainNode(ctx, { gain: feedback });
-            this.audioNodes.gain.push(gainNode);
+            this.audioNodesCustom.gain.push(gainNode);
 
             // loop/chain delay + gain changing + swap positions for pingpong
             this.plugin.attachToFirstInput(gainNode);
@@ -127,17 +129,17 @@ export default class Delay {
   
         const gainCallback = (val) => {
             const curTime = this.plugin.getContext().currentTime;
-            for(const gainNode of this.audioNodes.gain)
+            for(const gainNode of this.audioNodesCustom.gain)
             {
-                gainNode.gain.setValueAtTime(val, curTime, 0.03);
+                gainNode.gain.setValueAtTime(val, curTime + 0.03);
             }
         };
 
         const delayCallback = (val) => {
             const curTime = this.plugin.getContext().currentTime;
-            for(const delayNode of this.audioNodes.delay)
+            for(const delayNode of this.audioNodesCustom.delay)
             {
-                delayNode.delayTime.setValueAtTime(val, curTime, 0.03);
+                delayNode.delayTime.setValueAtTime(val, curTime + 0.03);
             }
         }
 

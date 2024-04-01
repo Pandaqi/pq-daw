@@ -1,42 +1,45 @@
 import AUDIO from "../audio"
 import DOM from "../dom"
+import PluginTemplate from "./pluginTemplate";
 
-export default class Reverb {
+
+// @SOURCE: http://reverbjs.org/
+// (selection based on variety, file size, and ignoring reverbs that sound too "muddled")
+const IMPULSE_RESPONSES = {
+    "None": "",
+    "Abernyte": "AbernyteGrainSilo",
+    "Living Room": "DomesticLivingRoom",
+    "Elveden Hall 1": "ElvedenHallLordsCloakroom",
+    "Elveden Hall 2": "ElvedenHallSmokingRoom",
+    "Brickworks": "ErrolBrickworksKiln",
+    "Royal Tennis Court": "FalklandPalaceRoyalTennisCourt",
+    "Inside Piano": "InsidePiano",
+    "Kinoull": "KinoullAisle",
+    "Maes Howe": "MaesHowe",
+    "Railroad Tunnel": "PurnodesRailroadTunnel",
+    "University Stairway": "StairwayUniversityOfYork",
+    "St Patricks Church": "StPatricksChurchPatringtonPosition3",
+    "Typing Room": "TerrysTypingRoom",
+    "Car Park": "UndergroundCarPark",
+}
+
+export default class Reverb extends PluginTemplate
+{
+    defaults = {
+        wet: 0.5,
+        gain: 0.0,
+        duration: 3,
+        decay: 2,
+        reverse: false,
+        pregain: 0.0,
+        predelay: 0.0
+    };
+
+    desc = "Pick an impulse response. Or change the sliders to generate a dynamic impulse.";
+
     constructor(plugin)
     {
-        this.plugin = plugin;
-        this.audioNodes = {};
-        this.defaults = {
-            wet: 0.5,
-            gain: 0.0,
-            duration: 3,
-            decay: 2,
-            reverse: false,
-            pregain: 0.0,
-            predelay: 0.0
-        };
-
-        this.desc = "Pick an impulse response. Or change the sliders to generate a dynamic impulse.";
-
-        // @SOURCE: http://reverbjs.org/
-        // (selection based on variety, file size, and ignoring reverbs that sound too "muddled")
-        this.impulseResponses = {
-            "None": "",
-            "Abernyte": "AbernyteGrainSilo",
-            "Living Room": "DomesticLivingRoom",
-            "Elveden Hall 1": "ElvedenHallLordsCloakroom",
-            "Elveden Hall 2": "ElvedenHallSmokingRoom",
-            "Brickworks": "ErrolBrickworksKiln",
-            "Royal Tennis Court": "FalklandPalaceRoyalTennisCourt",
-            "Inside Piano": "InsidePiano",
-            "Kinoull": "KinoullAisle",
-            "Maes Howe": "MaesHowe",
-            "Railroad Tunnel": "PurnodesRailroadTunnel",
-            "University Stairway": "StairwayUniversityOfYork",
-            "St Patricks Church": "StPatricksChurchPatringtonPosition3",
-            "Typing Room": "TerrysTypingRoom",
-            "Car Park": "UndergroundCarPark",
-        }
+        super(plugin);
     }
 
     // When any of them is changed, a new buffer is generated and given to the convolver
@@ -58,7 +61,7 @@ export default class Reverb {
         const loadParams = { extension: "m4a", path: "/tutorials/daw/impulse_responses" }
         await AUDIO.checkAndLoadResources(daw, [val], loadParams);
 
-        this.audioNodes.convolver.buffer = AUDIO.getResource(val);
+        (this.audioNodes.convolver as ConvolverNode).buffer = AUDIO.getResource(val);
     }
 
     calculateAndUseDynamicImpulse()
@@ -72,7 +75,7 @@ export default class Reverb {
         }
 
         const audioBuffer = this.getDynamicImpulse(params);
-        this.audioNodes.convolver.buffer = audioBuffer;
+        (this.audioNodes.convolver as ConvolverNode).buffer = audioBuffer;
     }
 
     // Calculates an impulse on the fly based on parameters
@@ -133,22 +136,25 @@ export default class Reverb {
 
         // the standard stuff
         this.plugin.createDryWetControl(cont, defaults.wet);
-        this.plugin.createMakeUpGainControl(cont, this.audioNodes.gain.gain, defaults.gain);
+        const gainNode = this.audioNodes.gain as GainNode;
+        this.plugin.createMakeUpGainControl(cont, gainNode.gain, defaults.gain);
 
         // pre-gain and pre-delay (seemed useful)
+        const preGainNode = this.audioNodes.preGain as GainNode;
         DOM.createSlider(node, { 
             cont: cont, min: -20, max: 20, value: defaults.pregain, step: 0.1,
-            name: "pregain", text: "Pre-Gain", unit: "gain", audioParams: this.audioNodes.preGain.gain
+            name: "pregain", text: "Pre-Gain", unit: "gain", audioParams: preGainNode.gain
         });
 
+        const preDelayNode = this.audioNodes.preDelay as DelayNode;
         DOM.createSlider(node, { 
             cont: cont, min: 0.0, max: 5.0, value: defaults.predelay, step: 0.05,
-            name: "predelay", text: "Pre-Delay", unit: "time", audioParams: this.audioNodes.preDelay.delayTime
+            name: "predelay", text: "Pre-Delay", unit: "time", audioParams: preDelayNode.delayTime
         });
 
         // controls for picking a specific impulse response
         DOM.createDropdown(node, {
-            cont: cont, keys: Object.keys(this.impulseResponses), values: Object.values(this.impulseResponses),
+            cont: cont, keys: Object.keys(IMPULSE_RESPONSES), values: Object.values(IMPULSE_RESPONSES),
             name: "impulse", "text": "Impulse", callback: this.onImpulseSourceChanged.bind(this)
         })
 

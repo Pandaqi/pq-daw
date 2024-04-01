@@ -1,38 +1,54 @@
 import AUDIO from "../audio"
 import DOM from "../dom"
+import PluginTemplate from "./pluginTemplate";
 
-export default class Equalizer {
+interface EqualizerVisualConfig
+{
+    centerLine: number,
+    numSteps: number,
+    marginBetweenBars: number,
+    totalBarWidth: number,
+    filterResolution: number,
+    dotRadius: number,
+    fontSize: number,
+    volumeRange: number,
+    octaveInPixels?: number,
+    pixelsPerDecibelVolume?: number,
+    numOctaves?: number
+}
+
+type Point = { x: number, y: number, freq?: number };
+
+export default class Equalizer extends PluginTemplate 
+{
+    canvas: HTMLCanvasElement
+    bands = {
+        "HighPass": { start: 28, end: 1000, def: 80, type: "highpass" },
+        "LowPass": { start: 1000, end: 20000, def: 16000, type: "lowpass" },
+        "LF": { start: 20, end: 200 }, 
+        "LMF": { start: 200, end: 700 }, 
+        "MF": { start: 700, end: 3000 }, 
+        "HMF": { start: 3000, end: 7000 }, 
+        "HF": { start: 7000, end: 20000 },
+    };
+    desc = "Higher Q = more narrow influence. Change gain on filters to use them (and see them in the graph).";
+    visualConfig: EqualizerVisualConfig
+
     constructor(plugin)
     {
-        this.plugin = plugin;
-        this.audioNodes = {};
-        this.canvas = null;
-
-        this.bands = {
-            "HighPass": { start: 28, end: 1000, def: 80, type: "highpass" },
-            "LowPass": { start: 1000, end: 20000, def: 16000, type: "lowpass" },
-            "LF": { start: 20, end: 200 }, 
-            "LMF": { start: 200, end: 700 }, 
-            "MF": { start: 700, end: 3000 }, 
-            "HMF": { start: 3000, end: 7000 }, 
-            "HF": { start: 7000, end: 20000 },
-        };
+        super(plugin);
 
         const defaultsObject = { gain: 0.0 };
         for(const key in this.bands)
         {
             const dataKey = key.toLowerCase();
             const val = this.bands[key];
-            const avgVal = val.def || 0.5*(val.start + val.end);
+            const avgVal = val.def ?? 0.5*(val.start + val.end);
             defaultsObject[dataKey + "frequency"] = avgVal;
             defaultsObject[dataKey + "q"] = 1.0;
             defaultsObject[dataKey + "gain"] = 0.0;
         }
         this.defaults = defaultsObject;
-
-        this.animFrame = null;
-
-        this.desc = "Higher Q = more narrow influence. Change gain on filters to use them (and see them in the graph).";
     }
 
     createNodes()
@@ -44,9 +60,9 @@ export default class Equalizer {
         for(const key in this.bands)
         {
             const val = this.bands[key];
-            const avgVal = val.def || 0.5*(val.start + val.end);
+            const avgVal = val.def ?? 0.5*(val.start + val.end);
             const biquad = ctx.createBiquadFilter();
-            biquad.type = val.type || "peaking";
+            biquad.type = val.type ?? "peaking";
             biquad.frequency.value = avgVal;
             biquad.gain.value = 0.0;
             this.audioNodes[key] = biquad;
@@ -76,12 +92,17 @@ export default class Equalizer {
         return "hsl(" + hue + ", 50%, 50%)";
     }
 
+    getAnalyserBins()
+    {
+        return (this.audioNodes.analyser as AnalyserNode).frequencyBinCount;
+    }
+
     // Frequency follows a logarithmic scale; we want more "resolution" in the lower frequencies than the higher ones
     // This function does that: step through the full analyser range, but in logarithmic steps
     // The result is therefore an array of _indices_ (into the analyser bins)
     getFrequencyBins(numSteps = 64)
     {
-        const bufferLength = this.audioNodes.analyser.frequencyBinCount;
+        const bufferLength = this.getAnalyserBins();
         const stepSize = bufferLength / numSteps;
         const arr = [];
         for(let i = 1; i <= bufferLength; i += stepSize)
@@ -94,7 +115,7 @@ export default class Equalizer {
     // This simply takes those _indices_ (frequency bins) and converts them to frequency numbers
     getFrequencies(numSteps = 64)
     {
-        const bufferLength = this.audioNodes.analyser.frequencyBinCount;
+        const bufferLength = this.getAnalyserBins();
         const sampleRate = this.plugin.getContext().sampleRate;
         const maxFrequency = 0.5*sampleRate;
         const frequencies = [];
@@ -108,9 +129,9 @@ export default class Equalizer {
     // This gets the smoothed, interpolated volume at each of those _indices_ (frequency bins)
     getLogarithmicFrequencyVolumes(numSteps = 64)
     {
-        const bufferLength = this.audioNodes.analyser.frequencyBinCount;
+        const bufferLength = this.getAnalyserBins();
         const dataArray = new Uint8Array(bufferLength);
-        this.audioNodes.analyser.getByteFrequencyData(dataArray);
+        (this.audioNodes.analyser as AnalyserNode).getByteFrequencyData(dataArray);
         const volumesPerFrequency = [];
         for(const val of this.getFrequencyBins(numSteps))
         {
@@ -134,6 +155,8 @@ export default class Equalizer {
         this.canvas.width = this.canvas.parentElement.offsetWidth;
         this.canvas.height = 0.5*this.canvas.width;
 
+        const an = this.audioNodes.analyser as AnalyserNode;
+
         this.visualConfig = {
             centerLine: 0.6*this.canvas.height,
             numSteps: 64,
@@ -142,7 +165,7 @@ export default class Equalizer {
             filterResolution: 4.0,
             dotRadius: this.canvas.width / 60.0,
             fontSize: this.canvas.width / 60.0,
-            volumeRange: 0.5*(this.audioNodes.analyser.maxDecibels - this.audioNodes.analyser.minDecibels) // seems reasonable
+            volumeRange: 0.5*(an.maxDecibels - an.minDecibels) // seems reasonable
             //volumeRange: -AUDIO.gainToDecibels(0.025),
         }
 
@@ -318,7 +341,7 @@ export default class Equalizer {
 
     getFilterCurve(key, frequencies)
     {
-        const an = this.audioNodes[key];
+        const an = this.audioNodes[key] as BiquadFilterNode;
         const bandFreq = an.frequency.value;
         const bandQ = an.Q.value;
         
@@ -385,7 +408,7 @@ export default class Equalizer {
     }
 
     // this actually draws the frequency line
-    visualizeFilterLine(line)
+    visualizeFilterLine(line:Point[])
     {
         const ctx = this.canvas.getContext("2d");
 
@@ -400,7 +423,7 @@ export default class Equalizer {
         ctx.stroke();
     }
 
-    visualizeFilterDots(dots)
+    visualizeFilterDots(dots:Point[])
     {
         const ctx = this.canvas.getContext("2d");
         ctx.shadowBlur = 10;
@@ -437,7 +460,7 @@ export default class Equalizer {
         {
             const dataKey = key.toLowerCase();
             const val = this.bands[key];
-            const an = this.audioNodes[key];
+            const an = this.audioNodes[key] as BiquadFilterNode;
 
             const bandCont = document.createElement("div");
             bandCont.classList.add("effect-subsection");
@@ -477,7 +500,8 @@ export default class Equalizer {
         const subCont = document.createElement("div");
         subCont.classList.add("effect-subsection");
         cont.appendChild(subCont);
-        this.plugin.createMakeUpGainControl(subCont, this.audioNodes.gain.gain, defaults.gain);
+        const gainNode = this.audioNodes.gain as GainNode;
+        this.plugin.createMakeUpGainControl(subCont, gainNode.gain, defaults.gain);
 
         this.visualize();
     }

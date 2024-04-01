@@ -1,6 +1,14 @@
 import AUDIO from "./audio"
+import Daw from "./daw";
 
-export default class Recorder {
+export default class Recorder 
+{
+    chunks: Blob[];
+    startTime: number;
+    endTime: number;
+    mediaRecorder: MediaRecorder;
+    blob: Blob;
+    URI: string;
 
     constructor()
     {
@@ -39,7 +47,7 @@ export default class Recorder {
         return this.mediaRecorder.state;
     }
 
-    async saveInBuffer(daw)
+    async saveInBuffer(daw:Daw)
     {
         await AUDIO.saveBlobResource(daw, this.URI, this.blob);
     }

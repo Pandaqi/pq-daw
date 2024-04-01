@@ -1,36 +1,48 @@
+import Daw from "./daw";
+import Part from "./part";
+
+interface AudioLoadParams
+{
+  path?: string,
+  extension?: string
+}
+
+type Point = { x: number, y: number };
+
 // responsible for loading audio and handling the audio context
-export default {
+export default 
+{
     init()
     {
         this.buffer = {};
     },
 
-    gainToDecibels(gainValue)
+    gainToDecibels(gainValue:number)
     {
         return 20 * Math.log10(gainValue);
     },
 
-    decibelsToGain(decibels)
+    decibelsToGain(decibels:number)
     {
         return Math.pow(10, (decibels / 20.0));  
     },
 
-    getResource(url)
+    getResource(url:string)
     {
         return this.buffer[url];
     },
 
-    hasResource(url)
+    hasResource(url:string)
     {
         return (url in this.buffer);
     },
 
-    saveResource(url, res)
+    saveResource(url:string, res:any)
     {
         this.buffer[url] = res;
     },
 
-    async saveBlobResource(daw, url, blob)
+    async saveBlobResource(daw:Daw, url:string, blob:Blob)
     {
         let fileReader = new FileReader();
 
@@ -38,7 +50,7 @@ export default {
         return new Promise((resolve, reject) => {
             
             fileReader.onloadend = () => {
-                const arrayBuffer = fileReader.result;
+                const arrayBuffer = fileReader.result as ArrayBuffer;
                 daw.getContext().decodeAudioData(
                     arrayBuffer, 
                     (b) => { that.saveResource(url, b); resolve(true); }, 
@@ -50,7 +62,7 @@ export default {
         })
     },
 
-    checkAndLoadResources(daw, urls, params = {})
+    checkAndLoadResources(daw:Daw, urls:string[], params:AudioLoadParams = {})
     {
         let promises = [];
         for(const url of urls)
@@ -62,7 +74,7 @@ export default {
         return Promise.all(promises);
     },
 
-    loadResource(daw, url, params = {})
+    loadResource(daw:Daw, url:string, params:AudioLoadParams = {})
     {
         let path = params.path || "";
         if(path.length > 0 && path.slice(0,-1) != "/") { path += "/"; }
@@ -83,21 +95,21 @@ export default {
     
                 daw.getContext().decodeAudioData(
                     this.response, 
-                    function (b) { that.saveResource(url, b); resolve(true); }, 
-                    function (e) { console.warn(e); reject(false); }
+                    (b) => { that.saveResource(url, b); resolve(true); }, 
+                    (e) => { console.warn(e); reject(false); }
                 );
             }
-            xhr.onerror = function () { reject(false); };   
+            xhr.onerror = () => { reject(false); };   
             xhr.send(); 
         });
     },
 
-    play(partNode, seekTime = 0, startOffset = 0)
+    play(partNode:Part, seekTime = 0, startOffset = 0)
     {
         if(partNode.getType() == "automation") { return; }
 
         const ctx = partNode.getContext();
-        if(ctx.started && ctx.state === "suspended") { ctx.resume(); }
+        if(ctx.state === "suspended") { ctx.resume(); } // @NOTE: used to have ctx.started && before, but apparently that isn't a thing anymore, so is this fine now?
 
         const curTime = ctx.currentTime;
         const startTime = curTime + startOffset;
@@ -156,7 +168,7 @@ export default {
         return source;
     },
     
-    stop(source)
+    stop(source:AudioBufferSourceNode)
     {
         source.stop();
     },
@@ -170,7 +182,7 @@ export default {
     // @SOURCE: https://stackoverflow.com/questions/22560413/html5-web-audio-convert-audio-buffer-into-wav-file
     //  => Works even better (no MP3 though), but requires separate service worker
     //
-    audioBufferToWaveBlobSimple(audioBuffer)
+    audioBufferToWaveBlobSimple(audioBuffer:AudioBuffer)
     {
         // Float32Array samples
         const [left, right] =  [audioBuffer.getChannelData(0), audioBuffer.getChannelData(1)]
@@ -259,149 +271,13 @@ export default {
         return new Uint8Array(buffer)
     },
 
-    async audioBufferToWaveBlob(audioBuffer) {
-
-        return new Promise(function(resolve, reject) {
-      
-          var worker = new Worker('/tutorials/js/buffer_to_wav.js');
-      
-          worker.onmessage = function( e ) {
-            var blob = new Blob([e.data.buffer], {type:"audio/wav"});
-            resolve(blob);
-          };
-      
-          let pcmArrays = [];
-          for(let i = 0; i < audioBuffer.numberOfChannels; i++) {
-            pcmArrays.push(audioBuffer.getChannelData(i));
-          }
-      
-          worker.postMessage({
-            pcmArrays,
-            config: {sampleRate: audioBuffer.sampleRate}
-          });
-      
-        });
-      
-    },
-
-    convertAudioBufferToType(buffer, type = "mp3")
-    {
-        return this.audioBufferToWav(buffer, "mp3");
-    },
-
-    
-    audioBufferToWav(aBuffer, format = "wav") {
-        let numOfChan = aBuffer.numberOfChannels,
-          btwLength = aBuffer.length * numOfChan * 2 + 44,
-          btwArrBuff = new ArrayBuffer(btwLength),
-          btwView = new DataView(btwArrBuff),
-          btwChnls = [],
-          btwIndex,
-          btwSample,
-          btwOffset = 0,
-          btwPos = 0;
-        setUint32(0x46464952); // "RIFF"
-        setUint32(btwLength - 8); // file length - 8
-        setUint32(0x45564157); // "WAVE"
-        setUint32(0x20746d66); // "fmt " chunk
-        setUint32(16); // length = 16
-        setUint16(1); // PCM (uncompressed)
-        setUint16(numOfChan);
-        setUint32(aBuffer.sampleRate);
-        setUint32(aBuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
-        setUint16(numOfChan * 2); // block-align
-        setUint16(16); // 16-bit
-        setUint32(0x61746164); // "data" - chunk
-        setUint32(btwLength - btwPos - 4); // chunk length
-      
-        for (btwIndex = 0; btwIndex < aBuffer.numberOfChannels; btwIndex++)
-          btwChnls.push(aBuffer.getChannelData(btwIndex));
-      
-        while (btwPos < btwLength) {
-          for (btwIndex = 0; btwIndex < numOfChan; btwIndex++) {
-            // interleave btwChnls
-            btwSample = Math.max(-1, Math.min(1, btwChnls[btwIndex][btwOffset])); // clamp
-            btwSample =
-              (0.5 + btwSample < 0 ? btwSample * 32768 : btwSample * 32767) | 0; // scale to 16-bit signed int
-            btwView.setInt16(btwPos, btwSample, true); // write 16-bit sample
-            btwPos += 2;
-          }
-          btwOffset++; // next source sample
-        }
-      
-        let wavHdr = lamejs.WavHeader.readHeader(new DataView(btwArrBuff));
-      
-        //Stereo
-        let data = new Int16Array(btwArrBuff, wavHdr.dataOffset, wavHdr.dataLen / 2);
-        let leftData = [];
-        let rightData = [];
-        for (let i = 0; i < data.length; i += 2) {
-          leftData.push(data[i]);
-          rightData.push(data[i + 1]);
-        }
-        var left = new Int16Array(leftData);
-        var right = new Int16Array(rightData);
-      
-        if (format === "MP3") {
-          //STEREO
-          if (wavHdr.channels === 2)
-            return wavToMp3Stereo(
-              wavHdr.channels,
-              wavHdr.sampleRate,
-              left,
-              right,
-            );
-          //MONO
-          else if (wavHdr.channels === 1)
-            return wavToMp3(wavHdr.channels, wavHdr.sampleRate, data);
-        } else return new Blob([btwArrBuff], { type: "audio/wav" });
-      
-        function setUint16(data) {
-          btwView.setUint16(btwPos, data, true);
-          btwPos += 2;
-        }
-      
-        function setUint32(data) {
-          btwView.setUint32(btwPos, data, true);
-          btwPos += 4;
-        }
-    },
-
-    wavToMp3(channels, sampleRate, left, right = null) {
-        var buffer = [];
-        var mp3enc = new lamejs.Mp3Encoder(channels, sampleRate, 128);
-        var remaining = left.length;
-        var samplesPerFrame = 1152;
-      
-        for (var i = 0; remaining >= samplesPerFrame; i += samplesPerFrame) {
-          if (!right) {
-            var mono = left.subarray(i, i + samplesPerFrame);
-            var mp3buf = mp3enc.encodeBuffer(mono);
-          } else {
-            var leftChunk = left.subarray(i, i + samplesPerFrame);
-            var rightChunk = right.subarray(i, i + samplesPerFrame);
-            var mp3buf = mp3enc.encodeBuffer(leftChunk, rightChunk);
-          }
-          if (mp3buf.length > 0) {
-            buffer.push(mp3buf); //new Int8Array(mp3buf));
-          }
-          remaining -= samplesPerFrame;
-        }
-        var d = mp3enc.flush();
-        if (d.length > 0) {
-          buffer.push(new Int8Array(d));
-        }
-      
-        return new Blob(buffer, { type: "audio/mp3" });
-    },
-
-    toLog(val, min, max)
+    toLog(val:number, min:number, max:number)
     {
         const exp = (val-min) / (max-min);
         return min * Math.pow(max/min, exp);
     },
 
-    getSimpleBezierCurveTo(t, start, p1, end)
+    getSimpleBezierCurveTo(t:number, start:Point, p1:Point, end:Point)
     {
       const x = Math.pow(1-t, 2) * start.x 
                 + 2*(1-t) * t * p1.x 
@@ -414,7 +290,7 @@ export default {
       return { x: x, y: y };
     },
 
-    getBezierCurveTo(t, start, p1, p2, end)
+    getBezierCurveTo(t:number, start:Point, p1:Point, p2:Point, end:Point)
     {
         const x = Math.pow(1-t, 3) * start.x 
                 + 3*Math.pow(1-t,2) * t * p1.x 
@@ -443,7 +319,7 @@ export default {
 
         let avgVolume = 0;
         let sumOfSquares = 0;
-        for(const vol of volumes)
+        for(const vol of Array.from(volumes)) // @TODO: this conversion might be REALLY costly, check that
         {
             const amplitude = (vol - avgVolume);
             sumOfSquares += amplitude*amplitude;

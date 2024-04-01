@@ -1,9 +1,34 @@
 import Slider from "./dom/slider"
 import Shortcuts from "./dom/shortcuts"
+import Part from "./part"
+import Track from "./track"
+import Plugin from "./plugin"
 
+interface DOMParams
+{
+    text?: string
+    name?: string
+    value?: any,
+    values?: any[],
+    keys?: string[],
+    callback?: Function,
+    min?: number,
+    max?: number,
+    step?: number,
+    unit?: string,
+    cont?: HTMLElement,
+    node?: HTMLElement,
+    useCapture?: boolean,
+    audioParams?: AudioParam,
+    autoConnect?: boolean,
+}
+
+type Focusable = Part|Track;
+
+export { DOMParams, Focusable }
 // layer for interaction between data behind the scenes and the DOM/HTML
-export default {
-
+export default 
+{
     init()
     {
         this.focusNode = null;
@@ -15,32 +40,32 @@ export default {
         return node instanceof classInstance;
     },
 
-    changeFocusTo(node)
+    changeFocusTo(part:Focusable)
     {
         this.releaseFocus(this.focusNode);
-        this.addFocus(node);
+        this.addFocus(part);
     },
 
-    addFocus(node)
+    addFocus(part:Focusable)
     {
-        this.focusNode = node;
+        this.focusNode = part;
         if(this.focusNode.node) { this.focusNode.node.classList.add("pq-daw-dom-focus"); }
         else { this.focusNode.classList.add("pq-daw-dom-focus"); }
     },
 
-    releaseFocus(node)
+    releaseFocus(part:Focusable)
     {
-        if(!node) { return; }
+        if(!part) { return; }
         if(this.focusNode.node) { this.focusNode.node.classList.remove("pq-daw-dom-focus"); }
         else { this.focusNode.classList.remove("pq-daw-dom-focus"); }
     },
     
-    setProperty(node, key, val)
+    setProperty(node:HTMLElement, key:string, val:any)
     {
         node.dataset[key] = val;
     },
 
-    setProperties(node, keys, vals)
+    setProperties(node:HTMLElement, keys:string[], vals:any[])
     {
         for(let i = 0; i < keys.length; i++)
         {
@@ -48,12 +73,12 @@ export default {
         }
     },
 
-    getProperty(node, key)
+    getProperty(node:HTMLElement, key:string)
     {
         return node.dataset[key];
     },
 
-    toggleButton(guiNode, ownerNode)
+    toggleButton(guiNode:HTMLElement, ownerNode:any)
     {
         if(guiNode.dataset.toggled == "true") {
             guiNode.classList.remove("daw-btn-enabled");
@@ -78,7 +103,7 @@ export default {
         else { plugin.setVisible(false); }
     },
 
-    addDefaults(params, defaults)
+    addDefaults(params:Record<string,any>, defaults:Record<string,any>)
     {
         for(const key in defaults)
         {
@@ -87,7 +112,7 @@ export default {
         }
     },
 
-    createEffectControlContainer(container, params)
+    createEffectControlContainer(container:HTMLElement, params:DOMParams)
     {
         const controlContainer = document.createElement("div");
         controlContainer.classList.add("effect-control-container");
@@ -99,7 +124,7 @@ export default {
         
         const label = document.createElement("label");
         label.innerHTML = params.text;
-        label.for = params.name;
+        label.setAttribute("for", params.name);
         labelContainer.appendChild(label);
         
         const display = document.createElement("span");
@@ -109,7 +134,7 @@ export default {
         return controlContainer;
     },
 
-    createDropdown(owner, params)
+    createDropdown(owner:HTMLElement, params:DOMParams)
     {
         const container = (params.cont) ? params.cont : owner;
         const defaults = { text: "Untitled", name: "untitled", callback: () => {}, keys: ["No options"], values: [""] };
@@ -134,7 +159,7 @@ export default {
         controlContainer.appendChild(select);
 
         select.addEventListener("change", () => {
-            const val = select[select.selectedIndex].value;
+            const val = (select[select.selectedIndex] as HTMLOptionElement).value;
             this.setProperty(owner, params.name, val);
             params.callback.call(this, select, owner);
         });
@@ -143,7 +168,7 @@ export default {
     },
 
     // @IMPROV: also put this into its own neat class + return that, like slider?
-    createButton(owner, params)
+    createButton(owner:HTMLElement, params:DOMParams)
     {
         const container = (params.cont) ? params.cont : owner;
         const defaults = { value: false, text: "Untitled", name: "untitled", callback: () => {} };
@@ -162,7 +187,7 @@ export default {
         if(params.value) { this.fakeClickButton(btn); }
     },
 
-    createSlider(owner, params = {})
+    createSlider(owner:HTMLElement, params:DOMParams = {})
     {
         const container = (params.cont) ? params.cont : owner;
         const defaults = { min: 0, max: 100, step: 1, value: 0, text: "Untitled", name: "untitled", unit: "percentage" };
@@ -174,9 +199,9 @@ export default {
         controlContainer.appendChild(inp);
 
         inp.type = "range";
-        inp.min = params.min;
-        inp.max = params.max;
-        inp.step = params.step;
+        inp.min = params.min.toString();
+        inp.max = params.max.toString();
+        inp.step = params.step.toString();
         inp.value = params.value;
         inp.name = params.name;
         inp.dataset.unit = params.unit;
@@ -191,7 +216,7 @@ export default {
         return new Slider(owner, nodes, params);
     },
 
-    createEditableText(params)
+    createEditableText(params:DOMParams)
     {
         const node = params.node;
         if(!node) { return; }
@@ -200,23 +225,23 @@ export default {
         const callback = params.callback;
 
         node.addEventListener("click", () => this.changeFocusTo(node), useCapture);
-        node.setAttribute("contentEditable", true);
+        node.setAttribute("contentEditable", "true");
 
         if(callback) { node.addEventListener("input", () => { callback(node) }); }
     },
 
-    makeButtonSingleClick(btn)
+    makeButtonSingleClick(btn:HTMLElement)
     {
-        btn.dataset.onetime = true;
+        btn.dataset.onetime = "true";
     },
 
-    fakeSelectDropdown(select)
+    fakeSelectDropdown(select:HTMLSelectElement)
     {
         var event = new Event('change', { bubbles: true, cancelable: false });
         select.dispatchEvent(event);
     },
 
-    fakeSelectDropdownByIndex(select, idx)
+    fakeSelectDropdownByIndex(select:HTMLSelectElement, idx:number)
     {
         const curIdx = select.selectedIndex;
         const nothingChanged = curIdx == idx;
@@ -225,32 +250,32 @@ export default {
         this.fakeSelectDropdown(select);
     },
 
-    fakeClickButton(btn)
+    fakeClickButton(btn:HTMLButtonElement)
     {
         var event = new Event('click', { bubbles: false, cancelable: false });
         btn.dispatchEvent(event);
     },
 
-    fakeChangeSlider(slider, delta = 0)
+    fakeChangeSlider(slider:HTMLInputElement, delta = 0)
     {
-        slider.value = parseFloat(slider.value) + delta
+        slider.value = ( parseFloat(slider.value) + delta ).toString();
         var event = new Event('input', { bubbles: true, cancelable: true });
         slider.dispatchEvent(event);
     },
 
-    fakeSetSlider(slider, newVal = 0)
+    fakeSetSlider(slider:HTMLInputElement, newVal = 0)
     {
         const curVal = parseFloat(slider.value);
         this.fakeChangeSlider(slider, newVal - curVal);
     },
 
-    connectSlider(guiNode, ownerNode, callback)
+    connectSlider(guiNode:HTMLElement, ownerNode:any, callback:Function)
     {
         guiNode.addEventListener("input", (ev) => { callback.call(this, guiNode, ownerNode) });
         this.fakeChangeSlider(guiNode); // immediately call it once to get correct initial values) 
     },
 
-    connectButton(guiNode, ownerNode, callback)
+    connectButton(guiNode:HTMLElement, ownerNode:any, callback:Function)
     {
         guiNode.dataset.toggled = "false";
         guiNode.addEventListener("click", (ev) => { 
@@ -259,7 +284,7 @@ export default {
         });
     },
 
-    connectPluginButton(guiNode, ownerNode, plugin)
+    connectPluginButton(guiNode:HTMLElement, ownerNode:any, plugin:Plugin)
     {
         guiNode.addEventListener("click", (ev) => { 
             this.toggleButton(guiNode, ownerNode);

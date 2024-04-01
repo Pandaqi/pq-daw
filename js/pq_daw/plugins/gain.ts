@@ -1,13 +1,13 @@
-export default class Gain {
+import PluginTemplate from "./pluginTemplate";
+
+export default class Gain extends PluginTemplate
+{
+    desc = "Just a node to change volume."
+    defaults = { gain: 0 }
+
     constructor(plugin)
     {
-        this.plugin = plugin;
-        this.audioNodes = {};
-        this.defaults = {
-            gain: 0
-        }
-
-        this.desc = "Just a node to change volume.";
+        super(plugin);
     }
 
     createNodes()
@@ -22,6 +22,7 @@ export default class Gain {
 
     createHTML(cont, defaults)
     {
-        this.plugin.createMakeUpGainControl(cont, this.audioNodes.gain.gain, defaults.gain);
+        const connectedControl = (this.audioNodes.gain as GainNode).gain;
+        this.plugin.createMakeUpGainControl(cont, connectedControl, defaults.gain);
     }
 }

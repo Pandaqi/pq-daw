@@ -1,19 +1,31 @@
+import Color from "../color";
+import Part from "../part";
 
-export default class Drawable {
-    constructor(part, canv)
+const CONFIG = {
+    strokeStyle: "#00FF00",
+    fillStyle: "#00FF00",
+    lineWidth: 4,
+    radius: 8,
+    minDistBetweenPoints: 10,
+    minDistBetweenPointsVisual: 40
+}
+
+type Point = { x: number, y: number };
+type PointAutomation = { time: number, value: number };
+
+export default class Drawable 
+{
+    part: Part;
+    canvas: HTMLCanvasElement;
+    drawing: boolean;
+    line: PointAutomation[];
+    
+    constructor(part:Part, canv:HTMLCanvasElement)
     {
         this.part = part;
         this.canvas = canv;
         this.drawing = false;
         this.line = [];
-        this.config = {
-            strokeStyle: "#00FF00",
-            fillStyle: "#00FF00",
-            lineWidth: 4,
-            radius: 8,
-            minDistBetweenPoints: 10,
-            minDistBetweenPointsVisual: 40
-        }
 
         canv.addEventListener('mousedown', this.onDrawStart.bind(this), true);
         canv.addEventListener('mousemove', this.onDrawProgress.bind(this), true);
@@ -28,7 +40,7 @@ export default class Drawable {
 
     // @NOTE: px is always horizontal, so the X-axis
     // @NOTE: returns it as a ratio between 0 and 1
-    getValueAt(time)
+    getValueAt(time:number)
     {
         if(this.line.length < 2) { return 1.0; }
 
@@ -64,10 +76,10 @@ export default class Drawable {
         this.redraw();
     }
 
-    visualize(color)
+    visualize(color:Color)
     {
-        this.config.strokeStyle = color;
-        this.config.fillStyle = color;
+        CONFIG.strokeStyle = color.toString();
+        CONFIG.fillStyle = color.toString();
         this.redraw();
     }
 
@@ -80,7 +92,7 @@ export default class Drawable {
 
     updateHTML()
     {
-        const partNodes = this.part.node.parentElement.getElementsByClassName("pq-daw-track-part");
+        const partNodes = Array.from(this.part.node.parentElement.getElementsByClassName("pq-daw-track-part")) as HTMLElement[];
         for(const part of partNodes)
         {
             if(part.classList.contains("full-automation-part")) { continue; }
@@ -122,12 +134,12 @@ export default class Drawable {
             ctx.lineTo(linePixels[i].x, linePixels[i].y);
         }
 
-        ctx.strokeStyle = this.config.strokeStyle;
-        ctx.lineWidth = this.config.lineWidth;
+        ctx.strokeStyle = CONFIG.strokeStyle;
+        ctx.lineWidth = CONFIG.lineWidth;
         ctx.stroke();
 
         // the dots where it changes
-        ctx.fillStyle = this.config.fillStyle;
+        ctx.fillStyle = CONFIG.fillStyle;
         ctx.beginPath();
         let prevPoint = null;
         for(let i = 0; i < linePixels.length; i++)
@@ -135,12 +147,12 @@ export default class Drawable {
             if(prevPoint) 
             {
                 const distToPrev = Math.pow(linePixels[i].x - prevPoint.x, 2) + Math.pow(linePixels[i].y - prevPoint.y, 2);
-                if(distToPrev <= Math.pow(this.config.minDistBetweenPointsVisual, 2)) { continue; }
+                if(distToPrev <= Math.pow(CONFIG.minDistBetweenPointsVisual, 2)) { continue; }
             }
             prevPoint = linePixels[i];
 
             ctx.beginPath();
-            ctx.arc(linePixels[i].x, linePixels[i].y, this.config.radius, 0, 2 * Math.PI, false);
+            ctx.arc(linePixels[i].x, linePixels[i].y, CONFIG.radius, 0, 2 * Math.PI, false);
             ctx.fill();
         }
     }
@@ -150,27 +162,27 @@ export default class Drawable {
         this.line = line;
     }
 
-    getPixelsInTime(px)
+    getPixelsInTime(px:number)
     {
         return this.part.getDaw().getPixelsInTime(px);
     }
 
-    getTimeInPixels(time)
+    getTimeInPixels(time:number)
     {
         return this.part.getDaw().getTimeInPixels(time);
     }
 
-    getValueInPixels(value)
+    getValueInPixels(value:number)
     {
         return (1.0 - value)*this.canvas.height;
     }
 
-    getPixelsInValue(px)
+    getPixelsInValue(px:number)
     {
         return 1.0 - (px / this.canvas.height);
     }
 
-    registerPoint(point, isLocal = false)
+    registerPoint(point:Point, isLocal = false)
     {
         let x = point.x, y = point.y;
 
@@ -186,7 +198,7 @@ export default class Drawable {
         for(let i = 0; i < this.line.length; i++)
         {
             const xDist = Math.abs(this.getTimeInPixels(this.line[i].time) - x);
-            if(xDist >= this.config.minDistBetweenPoints) { continue; }
+            if(xDist >= CONFIG.minDistBetweenPoints) { continue; }
             this.line[i].value = this.getPixelsInValue(y);
             addNew = false;
         }

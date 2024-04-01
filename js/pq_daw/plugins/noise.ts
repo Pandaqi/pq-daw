@@ -1,30 +1,32 @@
 import DOM from "../dom"
+import PluginTemplate from "./pluginTemplate"
 
-export default class Noise {
-    constructor(plugin)
-    {
-        this.plugin = plugin;
-        this.audioNodes = {};
-        this.defaults = {
-            noise: "pink",
-            gain: -25
-        };
-        this.noiseBuffers = {
-            white: null,
-            pink: null,
-            brown: null,
-            blue: null,
-            violet: null
-        }
-        this.needsNewNode = false;
-        this.playing = false;
-
-        this.plugin.setConstant(true);
-
-        this.desc = "Pick one of the noise types. Very loud, constant sound.";
+export default class Noise extends PluginTemplate
+{
+    defaults = {
+        noise: "pink",
+        gain: -25
     }
 
-    setNoiseType(val)
+    noiseBuffers = {
+        white: null,
+        pink: null,
+        brown: null,
+        blue: null,
+        violet: null
+    }
+
+    needsNewNode = false
+    playing = false
+    desc = "Pick one of the noise types. Very loud, constant sound.";
+
+    constructor(plugin)
+    {
+        super(plugin);
+        plugin.setConstant(true);
+    }
+
+    setNoiseType(val:string)
     {
         DOM.setProperty(this.plugin.node, "noise", val);
     }
@@ -134,7 +136,8 @@ export default class Noise {
         })
 
         // general gain knob => noise is LOUD, so default is lower
-        this.plugin.createMakeUpGainControl(cont, this.audioNodes.gain.gain, defaults.gain, { min: -50, max: 0 });
+        const gainNode = this.audioNodes.gain as GainNode;
+        this.plugin.createMakeUpGainControl(cont, gainNode.gain, defaults.gain, { min: -50, max: 0 });
     }
 
     createNewNode()
@@ -158,6 +161,7 @@ export default class Noise {
         }
 
         this.needsNewNode = false;
+        return noiseNode;
     }
 
     setPlaying(val)
@@ -166,11 +170,12 @@ export default class Noise {
 
         this.playing = val;
 
+        let an = this.audioNodes.noise as AudioBufferSourceNode;
         if(val) { 
-            if(this.needsNewNode) { this.createNewNode() }
-            this.audioNodes.noise.start(); 
+            if(this.needsNewNode) { an = this.createNewNode() }
+            an.start(); 
         } else {
-            if(this.audioNodes.noise) { this.audioNodes.noise.stop(); }
+            if(this.audioNodes.noise) { an.stop(); }
             this.needsNewNode = true;
         }
     }

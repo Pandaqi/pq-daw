@@ -1,5 +1,10 @@
-export default class Color {
-    constructor(h, s, l) {
+export default class Color 
+{
+    h: number;
+    s: number;
+    l: number;
+    
+    constructor(h:number, s:number, l:number) {
         this.h = h;
         this.s = s;
         this.l = l;

@@ -4,45 +4,91 @@ import Part from "./part"
 import Recorder from "./recorder"
 import Plugin from "./plugin"
 import Shortcuts from "./dom/shortcuts"
+import Daw from "./daw"
+
+const DEFAULTS = {
+    id: "",
+    type: "regular", // "regular", "automation" or "bus"
+    mute: false,
+    solo: false,
+    mono: false,
+    phase: false,
+    record: false,
+    out: "master",
+    effects: "",
+    display: true,
+    pan: 0,
+    volume: 0,
+    master: false,
+    show: "",
+    hide: "",
+    bypass: false
+}
+
+interface EffectParams
+{
+    type?: string,
+    button?: HTMLButtonElement,
+    parent?: Track,
+    existingHTML?: HTMLElement
+}
 
 // represents one track, holds its parts
-export default class Track {
+export default class Track 
+{
+    daw: Daw
+    num: number
+    node: HTMLDivElement
+    volumeDisplay: HTMLElement
+    volumeRect: HTMLElement
+    trackControls: HTMLElement
+    trackContent: HTMLElement
+    timeGridCanvas: HTMLCanvasElement
+    cursor: HTMLElement
+    typeLabel: HTMLElement
+    trackName: HTMLElement
+    allowEditingName: boolean
+    outName: HTMLElement
+    allowEditingOut: boolean
+    useOutAsBus: boolean
+    showOut: boolean
+    createNodes: boolean
+    createEffects: boolean
+    addBypassControls: boolean
+    effectWindowsContainer: HTMLDivElement
+    parts: Part[]
+    inputNode: AudioNode
+    outputNode: AudioNode
+    effectInputNode: AudioNode
+    volumeNode: GainNode
+    effectOutputNode: AudioNode
+    panNode: StereoPannerNode
+    recorder: Recorder
+    analyserNode: AnalyserNode
+    effects: Plugin[]
+    containers: { controls: HTMLElement; volume: HTMLElement; effects: HTMLElement; name: HTMLElement }
+    effectLabelsContainer: HTMLElement
+
+    sliders: Record<string, HTMLInputElement>
+    buttons: Record<string, HTMLButtonElement>
+
     constructor(params)
     {
         this.daw = params.parent;
         this.num = params.num;
-        this.defaults = {
-            id: "",
-            type: "regular", // "regular", "automation" or "bus"
-            mute: false,
-            solo: false,
-            mono: false,
-            phase: false,
-            record: false,
-            out: "master",
-            effects: "",
-            display: true,
-            pan: 0,
-            volume: 0,
-            master: false,
-            show: "",
-            hide: "",
-            bypass: false
-        }
 
         this.node = this.setupHTML(params);
         
         const node = this.node;
-        this.volumeDisplay = node.getElementsByClassName("volume-display")[0];
-        this.volumeRect = node.getElementsByClassName("volume-display-rect")[0];
+        this.volumeDisplay = node.getElementsByClassName("volume-display")[0] as HTMLElement;
+        this.volumeRect = node.getElementsByClassName("volume-display-rect")[0] as HTMLElement;
         
-        this.trackControls = node.getElementsByClassName("track-controls")[0];
-        this.trackContent = node.getElementsByClassName("track-content")[0];
+        this.trackControls = node.getElementsByClassName("track-controls")[0] as HTMLElement;
+        this.trackContent = node.getElementsByClassName("track-content")[0] as HTMLElement;
 
-            
-        this.timeGridCanvas = this.trackContent.getElementsByClassName("time-grid")[0].getElementsByTagName("canvas")[0];
-        this.cursor = this.trackContent.getElementsByClassName("time-cursor")[0];
-        this.typeLabel = this.trackContent.getElementsByClassName("track-type-label")[0];
+        this.timeGridCanvas = this.trackContent.getElementsByClassName("time-grid")[0].getElementsByTagName("canvas")[0] as HTMLCanvasElement;
+        this.cursor = this.trackContent.getElementsByClassName("time-cursor")[0] as HTMLElement;
+        this.typeLabel = this.trackContent.getElementsByClassName("track-type-label")[0] as HTMLElement;
         this.typeLabel.innerHTML = this.getType().toUpperCase();
 
         // general DOM events
@@ -52,13 +98,13 @@ export default class Track {
         this.trackContent.addEventListener("mouseup", this.placeTimeCursorAtClick.bind(this), false);
         this.node.addEventListener("click", () => DOM.changeFocusTo(this), true);
         
-        this.trackName = this.node.getElementsByClassName("track-name")[0];
+        this.trackName = this.node.getElementsByClassName("track-name")[0] as HTMLElement;
         if(this.allowEditingName)
         {
             DOM.createEditableText({ node: this.trackName, callback: this.setNameFromDOM.bind(this) });
         }
 
-        this.outName = this.node.getElementsByClassName("out-name")[0];
+        this.outName = this.node.getElementsByClassName("out-name")[0] as HTMLElement;
         if(this.allowEditingOut)
         {
             DOM.createEditableText({ node: this.outName, callback: this.setOutFromDOM.bind(this) });
@@ -80,7 +126,7 @@ export default class Track {
         this.sliders = {};
         for(const key of sliderKeys)
         {  
-            const slider = node.getElementsByClassName(key)[0];
+            const slider = node.getElementsByClassName(key)[0] as HTMLInputElement;
             if(!slider) { continue; }
             const defaultValue = parseFloat(DOM.getProperty(this.node, key));
             this.sliders[key] = slider;
@@ -96,7 +142,7 @@ export default class Track {
         this.buttons = {};
         for(const key of buttonKeys)
         {
-            const btn = node.getElementsByClassName(key)[0];
+            const btn = node.getElementsByClassName(key)[0] as HTMLButtonElement;
             if(!btn) { continue; }
             this.buttons[key] = btn;
 
@@ -148,10 +194,10 @@ export default class Track {
     {
         const node = params.node || { dataset: {} };
 
-        for(const key in this.defaults)
+        for(const key in DEFAULTS)
         {
             if(key in node.dataset) { continue; }
-            node.dataset[key] = this.defaults[key];
+            node.dataset[key] = DEFAULTS[key];
         }
 
         if(params.node) {
@@ -232,9 +278,9 @@ export default class Track {
         pan.type = "range";
         pan.classList.add("pan");
         pan.name = "pan";
-        pan.min = -100;
-        pan.max = 100;
-        pan.step = 1;
+        pan.min = "-100";
+        pan.max = "100";
+        pan.step = "1";
         pan.title = Shortcuts.getTitleFor("tracks", { name: "pan" })
         core.appendChild(pan);
 
@@ -270,8 +316,8 @@ export default class Track {
         volumeSlider.type = "range";
         volumeSlider.classList.add("volume");
         volumeSlider.name = "volume";
-        volumeSlider.min = -100
-        volumeSlider.max = 0
+        volumeSlider.min = "-100";
+        volumeSlider.max = "0";
         volumeSlider.title = Shortcuts.getTitleFor("tracks", { name: "volume"});
         volumeDisplay.appendChild(volumeSlider)
 
@@ -521,7 +567,7 @@ export default class Track {
 
         if(this.daw.isOffline())
         {
-            const effectHTMLList = this.effectWindowsContainer.getElementsByClassName("effect");
+            const effectHTMLList = Array.from(this.effectWindowsContainer.getElementsByClassName("effect")) as HTMLElement[];
             for(const effectHTML of effectHTMLList)
             {
                 this.addEffect({ type: effectHTML.dataset.type, existingHTML: effectHTML });
@@ -593,7 +639,7 @@ export default class Track {
         return DOM.getProperty(this.node, "master") == "true";
     }
 
-    setMaster()
+    makeMaster()
     {
         DOM.setProperty(this.node, "master", true);
         this.setName("master");
@@ -792,7 +838,7 @@ export default class Track {
         if(!this.parts) { return; }
         if(removeHTML)
         {
-            const partNodes = this.node.getElementsByClassName("pq-daw-track-part");
+            const partNodes = Array.from(this.node.getElementsByClassName("pq-daw-track-part")) as HTMLElement[];
             for(const partNode of partNodes)
             {
                 partNode.remove();
@@ -841,7 +887,7 @@ export default class Track {
         prevNode.connect(nextNode);
     }
 
-    addEffect(params = {})
+    addEffect(params:EffectParams = {})
     {
         if(!this.createEffects) { return; }
         if(!params.type) { console.error("Can't add effect without type"); return; }
@@ -868,7 +914,7 @@ export default class Track {
         return effect;
     }
 
-    removeEffect(effect)
+    removeEffect(effect:Plugin)
     {
         const idx = this.effects.indexOf(effect);
         if(idx == -1) { return; }
