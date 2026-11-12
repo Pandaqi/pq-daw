@@ -1,0 +1,549 @@
+figure.pq-daw-wrapper {
+  margin: 0;
+  margin-bottom: 4em;
+}
+figure.pq-daw-wrapper .daw-metadata {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  margin: 0.25rem;
+  opacity: 0.75;
+  font-size: 0.66rem;
+  font-style: italic;
+}
+
+.daw-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+.daw-controls button {
+  border-radius: 0.25rem;
+  filter: drop-shadow(0 0 2px #999);
+  transition: transform 0.2s;
+}
+.daw-controls button:hover {
+  transform: scale(1.25);
+}
+
+.pq-daw-track button, .pq-daw-track-effects button {
+  border-radius: 0.2rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  color: black;
+  font-weight: bold;
+  font-family: "Dosis", sans-serif;
+  font-size: 0.8rem;
+}
+.pq-daw-track button.daw-btn-enabled, .pq-daw-track-effects button.daw-btn-enabled {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+}
+
+.pq-daw-wrapper .icon {
+  background-image: url(static/daw/assets/pq_daw_icons.webp);
+  width: 32px;
+  height: 32px;
+  background-size: cover;
+}
+.pq-daw-wrapper .daw-controls .icon-play {
+  background-color: #015601;
+}
+.pq-daw-wrapper .icon-play {
+  background-position-x: 0%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-play {
+  background-color: #015601;
+}
+.pq-daw-wrapper .daw-controls .icon-stop {
+  background-color: #4e1000;
+}
+.pq-daw-wrapper .icon-stop {
+  background-position-x: -100%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-stop {
+  background-color: #4e1000;
+}
+.pq-daw-wrapper .daw-controls .icon-addtrack {
+  background-color: #0b4d7e;
+}
+.pq-daw-wrapper .icon-addtrack {
+  background-position-x: -200%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-addtrack {
+  background-color: #0b4d7e;
+}
+.pq-daw-wrapper .daw-controls .icon-removetrack {
+  background-color: #0b4d7e;
+}
+.pq-daw-wrapper .icon-removetrack {
+  background-position-x: -300%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-removetrack {
+  background-color: #0b4d7e;
+}
+.pq-daw-wrapper .daw-controls .icon-download {
+  background-color: #5f0c5f;
+}
+.pq-daw-wrapper .icon-download {
+  background-position-x: -400%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-download {
+  background-color: #5f0c5f;
+}
+.pq-daw-wrapper .daw-controls .icon-general1 {
+  background-color: black;
+}
+.pq-daw-wrapper .icon-general1 {
+  background-position-x: -500%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-general1 {
+  background-color: black;
+}
+.pq-daw-wrapper .daw-controls .icon-general2 {
+  background-color: black;
+}
+.pq-daw-wrapper .icon-general2 {
+  background-position-x: -600%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-general2 {
+  background-color: black;
+}
+.pq-daw-wrapper .daw-controls .icon-general3 {
+  background-color: black;
+}
+.pq-daw-wrapper .icon-general3 {
+  background-position-x: -700%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-general3 {
+  background-color: black;
+}
+.pq-daw-wrapper .daw-controls .icon-compressor {
+  background-color: #ffa2ff;
+}
+.pq-daw-wrapper .icon-compressor {
+  background-position-x: -800%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-compressor {
+  background-color: #ffa2ff;
+}
+.pq-daw-wrapper .daw-controls .icon-delay {
+  background-color: #ffa6b6;
+}
+.pq-daw-wrapper .icon-delay {
+  background-position-x: -900%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-delay {
+  background-color: #ffa6b6;
+}
+.pq-daw-wrapper .daw-controls .icon-distortion {
+  background-color: #ff9d9d;
+}
+.pq-daw-wrapper .icon-distortion {
+  background-position-x: -1000%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-distortion {
+  background-color: #ff9d9d;
+}
+.pq-daw-wrapper .daw-controls .icon-equalizer {
+  background-color: #7ff87f;
+}
+.pq-daw-wrapper .icon-equalizer {
+  background-position-x: -1100%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-equalizer {
+  background-color: #7ff87f;
+}
+.pq-daw-wrapper .daw-controls .icon-gain {
+  background-color: #84d6f0;
+}
+.pq-daw-wrapper .icon-gain {
+  background-position-x: -1200%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-gain {
+  background-color: #84d6f0;
+}
+.pq-daw-wrapper .daw-controls .icon-noise {
+  background-color: #bcbcff;
+}
+.pq-daw-wrapper .icon-noise {
+  background-position-x: -1300%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-noise {
+  background-color: #bcbcff;
+}
+.pq-daw-wrapper .daw-controls .icon-reverb {
+  background-color: #c8c8ff;
+}
+.pq-daw-wrapper .icon-reverb {
+  background-position-x: -1400%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-reverb {
+  background-color: #c8c8ff;
+}
+.pq-daw-wrapper .daw-controls .icon-effect1 {
+  background-color: black;
+}
+.pq-daw-wrapper .icon-effect1 {
+  background-position-x: -1500%;
+  /*background-color: rgba($col, $icon-opacity);*/
+}
+.pq-daw-wrapper .effect-effect1 {
+  background-color: black;
+}
+
+.pq-daw-track {
+  display: flex;
+  height: 100px;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.pq-daw-track .track-metadata {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.pq-daw-track .track-metadata .track-name, .pq-daw-track .track-metadata .out-name {
+  display: block;
+  width: 100%;
+  font-family: "Dosis", serif;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 0.33rem;
+  color: white;
+  font-size: 0.66rem;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+  box-shadow: inset 0 0 3px #222;
+}
+.pq-daw-track .track-buttons {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  justify-content: start;
+  align-items: center;
+  margin: 0.25rem;
+}
+.pq-daw-track .track-controls {
+  width: 7.5rem;
+  max-width: 7.5rem;
+  min-width: 7.5rem;
+  padding: 0.5rem;
+}
+.pq-daw-track .track-controls .track-effects {
+  overflow: auto;
+  height: 50px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  justify-content: left;
+  align-items: center;
+}
+.pq-daw-track .track-content {
+  position: relative;
+  width: 100%;
+}
+.pq-daw-track .track-content .time-grid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+.pq-daw-track .track-content .time-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 5px;
+  z-index: 1000;
+  background-color: black;
+  pointer-events: none;
+  filter: drop-shadow(0px 0px 4px #666);
+}
+.pq-daw-track .track-content .track-type-label {
+  position: absolute;
+  right: 0.33rem;
+  bottom: 0.33rem;
+  pointer-events: none;
+  z-index: 1500;
+  font-family: "Dosis", serif;
+  font-weight: bold;
+  opacity: 0.25;
+  color: black;
+}
+.pq-daw-track .track-content .pq-daw-track-part {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  max-width: 100%;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.25rem;
+}
+.pq-daw-track .volume-display {
+  height: 100%;
+  width: 1.5rem;
+  transform: rotate(180deg);
+  position: relative;
+  padding: 0.25rem;
+  background-color: black;
+}
+.pq-daw-track .volume-display .volume-display-container {
+  box-shadow: inset 0 0 3px black;
+  height: 100%;
+  width: 100%;
+}
+.pq-daw-track .volume-display .volume-display-rect {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 50px;
+  background-color: green;
+  z-index: -5;
+  position: relative;
+}
+
+.pq-daw-track-part .part-edge-dragger, .pq-daw-track-part .part-fade-visual {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Focus by DOM */
+.pq-daw-dom-focus {
+  opacity: 1;
+  animation: fadeInOut 1s linear;
+  animation-iteration-count: infinite;
+  background-color: white !important;
+  color: black !important;
+}
+
+@keyframes fadeInOut {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 0rem #222);
+  }
+  50% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 0.33rem #222);
+  }
+}
+/* Plugins */
+.pq-daw-track-effects .effect {
+  border-top: 0.5rem solid black;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
+}
+.pq-daw-track-effects .effect .full-width, .pq-daw-track-effects .effect canvas {
+  grid-column: 1/3;
+}
+@media (max-width: 720px) {
+  .pq-daw-track-effects .effect .full-width, .pq-daw-track-effects .effect canvas {
+    grid-column: auto;
+  }
+}
+.pq-daw-track-effects .effect .effect-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.pq-daw-track-effects .effect .effect-header h2 {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.66);
+  padding: 0;
+  font-size: 1rem !important;
+}
+.pq-daw-track-effects .effect .effect-header h2::before {
+  all: unset;
+}
+.pq-daw-track-effects .effect .effect-header h2::after {
+  all: unset;
+}
+.pq-daw-track-effects .effect .effect-header p {
+  margin: 0;
+  width: 100%;
+  text-align: left;
+  font-size: 0.66rem;
+  line-height: 100%;
+  font-style: italic;
+  opacity: 0.75;
+}
+.pq-daw-track-effects .effect .effect-header .effect-control-container {
+  width: unset;
+}
+.pq-daw-track-effects .effect .effect-header .effect-control-container .label-container {
+  width: unset;
+  max-width: unset;
+  min-width: unset;
+}
+.pq-daw-track-effects .effect canvas {
+  border-radius: 0.5rem;
+}
+.pq-daw-track-effects .effect .effect-subsection {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+}
+.pq-daw-track-effects .effect .effect-subsection-header {
+  font-family: "Dosis", serif;
+  font-weight: bold;
+}
+.pq-daw-track-effects .effect-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 720px) {
+  .pq-daw-track-effects .effect-container {
+    grid-template-columns: 1fr;
+  }
+}
+.pq-daw-track-effects .effect-control-container {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.pq-daw-track-effects .effect-control-container .label-container {
+  width: 7rem;
+  min-width: 7rem;
+}
+.pq-daw-track-effects .effect-control-container .label-container .value-display {
+  opacity: 0.75;
+  font-size: 1rem;
+  margin-left: 0.5rem;
+}
+
+/* To get custom dropdowns */
+select {
+  appearance: none;
+  background-color: transparent;
+  border: none;
+  padding: 0 1em 0 0;
+  margin: 0;
+  width: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: inherit;
+  line-height: inherit;
+}
+
+select {
+  background-color: rgba(0, 0, 0, 0.66);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-family: "Dosis", serif;
+  color: white;
+  cursor: pointer;
+  box-shadow: inset 0 0 6px #333;
+}
+
+/* The whole mess of styles to get custom sliders */
+.track-controls input, .volume-display input, .effect-control-container input {
+  width: 100%;
+  font-family: "Dosis", sans-serif;
+}
+.track-controls input[type=range], .volume-display input[type=range], .effect-control-container input[type=range] {
+  appearance: none;
+  width: 100%;
+  background: transparent;
+}
+.track-controls input[type=range]::-webkit-slider-thumb, .volume-display input[type=range]::-webkit-slider-thumb, .effect-control-container input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+}
+.track-controls input[type=range]:focus, .volume-display input[type=range]:focus, .effect-control-container input[type=range]:focus {
+  outline: none;
+}
+.track-controls input[type=range]:focus::-webkit-slider-thumb, .volume-display input[type=range]:focus::-webkit-slider-thumb, .effect-control-container input[type=range]:focus::-webkit-slider-thumb {
+  background-color: white;
+  outline: 3px solid rgb(255, 255, 255);
+  outline-offset: 0.125rem;
+}
+.track-controls input[type=range]:focus::-moz-range-thumb, .volume-display input[type=range]:focus::-moz-range-thumb, .effect-control-container input[type=range]:focus::-moz-range-thumb {
+  background-color: white;
+  outline: 3px solid rgb(255, 255, 255);
+  outline-offset: 0.125rem;
+}
+.track-controls input[type=range]::-webkit-slider-thumb, .volume-display input[type=range]::-webkit-slider-thumb, .effect-control-container input[type=range]::-webkit-slider-thumb {
+  height: 1rem;
+  width: 0.5rem;
+  border: none;
+  border-radius: 0.2rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  margin-top: -0.5rem;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.3);
+}
+.track-controls input[type=range]::-moz-range-thumb, .volume-display input[type=range]::-moz-range-thumb, .effect-control-container input[type=range]::-moz-range-thumb {
+  height: 1rem;
+  width: 0.5rem;
+  border: none;
+  border-radius: 0.2rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  margin-top: -0.5rem;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.3);
+}
+.track-controls input[type=range]::-ms-thumb, .volume-display input[type=range]::-ms-thumb, .effect-control-container input[type=range]::-ms-thumb {
+  height: 1rem;
+  width: 0.5rem;
+  border: none;
+  border-radius: 0.2rem;
+  background-color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  margin-top: -0.5rem;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.3);
+}
+
+.track-controls input[type=range]::-webkit-slider-runnable-track, .effect-control-container input[type=range]::-webkit-slider-runnable-track {
+  border: none;
+  width: 100%;
+  height: 0.25rem;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 0.1rem;
+}
+.track-controls input[type=range]::-moz-range-track, .effect-control-container input[type=range]::-moz-range-track {
+  border: none;
+  width: 100%;
+  height: 0.25rem;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 0.1rem;
+}
+.track-controls input[type=range]:focus::-webkit-slider-runnable-track, .effect-control-container input[type=range]:focus::-webkit-slider-runnable-track {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.volume-display input[type=range] {
+  position: absolute;
+  top: 45px;
+  left: -45px;
+  transform: rotate(90deg);
+  z-index: 2000;
+}
